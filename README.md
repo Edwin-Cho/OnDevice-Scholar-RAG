@@ -53,6 +53,14 @@ OnDevice_Scholar_RAG/
 │   ├── evaluation_rubric.md    # Evaluation criteria
 │   └── images/
 │       └── architecture.png    # System architecture diagram
+├── frontend/                   # React Web UI (Phase 2 v2.0.0)
+│   ├── src/
+│   │   ├── pages/              # Login, Query, Documents, Admin
+│   │   ├── components/         # Layout (sidebar + health badge)
+│   │   ├── contexts/           # AuthContext (JWT)
+│   │   └── lib/                # api.ts, types.ts
+│   ├── vite.config.ts
+│   └── package.json
 ├── OnDevice_Scholar_RAG_SRS.md # Software Requirements Specification v1.1.0
 ├── requirements.txt
 └── README.md
@@ -74,7 +82,14 @@ pip install -r requirements.txt
 uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-### 3. Get a token
+### 3. Start the Web UI (optional)
+
+```bash
+cd frontend && npm install && npm run dev
+# Open http://localhost:5173  (login: admin / admin1234)
+```
+
+### 4. Get a token (CLI alternative)
 
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8000/auth/token \
@@ -83,7 +98,7 @@ TOKEN=$(curl -s -X POST http://localhost:8000/auth/token \
   | python3 -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
 ```
 
-### 4. Ingest a document
+### 5. Ingest a document
 
 ```bash
 curl -X POST http://localhost:8000/ingest \
@@ -91,7 +106,7 @@ curl -X POST http://localhost:8000/ingest \
   -F "file=@paper.pdf"
 ```
 
-### 5. Query
+### 6. Query
 
 ```bash
 curl -X POST http://localhost:8000/query \

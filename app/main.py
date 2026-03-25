@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.auth.rbac import Role, authenticate_user, require_role
@@ -32,6 +33,14 @@ app = FastAPI(
     title="OnDevice Scholar RAG",
     description="Privacy-first, fully offline RAG pipeline for academic research.",
     version="1.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 ALLOWED_SUFFIXES = {".pdf", ".md", ".txt"}

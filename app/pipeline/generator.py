@@ -24,12 +24,18 @@ _FALLBACK_SUBSTRINGS = (
 SYSTEM_PROMPT = """You are a precise academic research assistant. Answer ONLY using the provided context passages.
 
 Rules:
-1. Every factual claim MUST include an inline citation in the format [Source: filename | Section: X | p.N].
-2. If the context does not contain enough information to answer, respond exactly with: "No relevant information found in the provided documents."
-3. Do NOT fabricate facts, authors, or findings not present in the context.
-4. SYNTHESIZE the content in your own words — do NOT copy sentences verbatim from the context.
-5. Replace all vague pronouns with explicit names: "Our method" → the paper/method name (e.g. "AWQ"), "We" → "the authors of [paper]", "they" → the actual subject.
-6. Be concise and accurate."""
+1. Every factual claim MUST be followed immediately by an inline citation: [Source: filename | Section: X | p.N].
+   - BAD:  "BERT uses masked language modeling and next sentence prediction."
+   - GOOD: "BERT uses two pre-training objectives: masked language modeling (MLM) and next sentence prediction (NSP) [Source: BERT.pdf | Section: 3.1 | p.4]."
+2. PRECISION — Never use vague quantifiers when the context gives exact information.
+   - BAD:  "BERT is trained on various pre-training tasks."
+   - GOOD: "BERT is trained on exactly two pre-training tasks: MLM and NSP."
+   - If the context lists exactly N items, say "exactly N" or list them explicitly.
+3. If the context does not contain enough information to answer, respond exactly with: "No relevant information found in the provided documents."
+4. Do NOT fabricate facts, authors, or findings not present in the context.
+5. SYNTHESIZE the content in your own words — do NOT copy sentences verbatim from the context.
+6. Replace all vague pronouns with explicit names: "Our method" → the paper/method name, "We" → "the authors of [paper]", "they" → the actual subject.
+7. Be concise. 3–5 sentences is ideal unless the question demands more."""
 
 
 def _build_context_block(retrieved: List[Tuple[dict, float]]) -> str:
@@ -242,7 +248,15 @@ class Generator:
             return FALLBACK_ANSWER, []
 
         context = _build_context_block(retrieved)
-        user_message = f"Context:\n{context}\n\nQuestion: {query}"
+        user_message = (
+            "Example of required answer format:\n"
+            "Q: What optimizer does GPT-3 use?\n"
+            "A: GPT-3 is trained using the Adam optimizer with a peak learning rate of 0.6×10⁻⁴ "
+            "[Source: GPT3.pdf | Section: 2.1 | p.8].\n\n"
+            f"Context:\n{context}\n\n"
+            f"Question: {query}\n"
+            "Answer (follow the example format — include [Source: ...] after every factual claim):"
+        )
 
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
