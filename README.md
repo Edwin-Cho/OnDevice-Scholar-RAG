@@ -242,6 +242,11 @@ Apache License 2.0
 | **RBAC** | Researcher / Lab PI / Admin 역할 기반 접근 제어 |
 | **MPS 최적화** | Apple Silicon M-series 우선 최적화 |
 | **증분 인덱싱** | 전체 재빌드 없이 신규 문서 추가 가능 |
+| **메트릭 라벨 충실도 (P12)** | 생성 후 검사: 답변 수치의 라벨 컨텍스트를 retrieved 청크와 비교 → 불일치 시 `partial` warning |
+| **수치 존재 검증 (P13)** | 생성 후 검사: 답변에 있는 % 수치가 retrieved 청크에 없으면 할루시네이션 warning |
+| **노이즈 섹션 헤더 필터** | `_is_noise_header` 를 쿼리 시점에 context block + citation 양쪽 적용 — re-indexing 불필요 |
+| **단일 출처 amber 배지** | 답변이 1개 문서만 인용 시 UI에 "1 source — verify independently" 경고 표시 |
+| **할루시네이션 방어 프롬프트** | SYSTEM_PROMPT Rule 9–11: 메트릭 이름 verbatim 보존, SOTA 시점 한정, 수치 날조 금지 |
 
 ### 빠른 시작
 
