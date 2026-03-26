@@ -35,7 +35,11 @@ Rules:
 4. Do NOT fabricate facts, authors, or findings not present in the context.
 5. SYNTHESIZE the content in your own words — do NOT copy sentences verbatim from the context.
 6. Replace all vague pronouns with explicit names: "Our method" → the paper/method name, "We" → "the authors of [paper]", "they" → the actual subject.
-7. Be concise. 3–5 sentences is ideal unless the question demands more."""
+7. Be concise. 3–5 sentences is ideal unless the question demands more.
+8. MATH — Wrap all mathematical expressions in LaTeX delimiters so they render correctly.
+   - Inline math: $O(n^2)$, $d_{\text{model}}$, $\sqrt{d_k}$
+   - Block math: $$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
+   - Never write bare: O(n^2), O(n log n), d_model — always wrap in $...$."""
 
 
 def _build_context_block(retrieved: List[Tuple[dict, float]]) -> str:
