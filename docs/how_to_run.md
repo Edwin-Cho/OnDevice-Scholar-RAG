@@ -1,6 +1,6 @@
 # How to Run — OnDevice Scholar RAG
 
-**Version:** 1.3.0  
+**Version:** 1.4.0  
 **Target Platform:** macOS (Apple Silicon MPS) · Windows (CPU / NVIDIA CUDA)  
 [한국어 버전은 하단을 참조하세요.](#한국어-버전)
 
@@ -200,6 +200,20 @@ When no relevant documents found:
 }
 ```
 
+When post-generation hallucination checks trigger (P12 / P13):
+
+```json
+{
+  "status": "partial",
+  "warnings": [
+    "Metric label mismatch for 31.6%: answer label context differs from source context",
+    "Numeric hallucination suspected: 89.33% not found in retrieved context"
+  ]
+}
+```
+
+> `status: partial` with `warnings` from P12/P13 means the answer may contain metric label reassignment or fabricated numbers. Verify against the cited source.
+
 ---
 
 ## Admin Commands
@@ -257,6 +271,8 @@ curl http://localhost:8000/health
 | FAISS index load failure | Corrupted index file | Call `POST /admin/rebuild-index` |
 | `section_header: null` returned | Font/bold detection failure | Standard arXiv PDFs are auto-detected after `rebuild-index` |
 | `status: partial` returned | Missing metadata or one-sided retrieval | Check content of `warnings` field |
+| `Metric label mismatch` warning | P12 detected label reassignment | Verify metric name against cited source table |
+| `Numeric hallucination suspected` warning | P13 detected fabricated percentage | Cross-check number against source document |
 | PDF parse failure | Encrypted or corrupted PDF | Check `detail` field in error response |
 | PowerShell `ExecutionPolicy` error | Script execution blocked | Run: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` |
 
@@ -331,4 +347,6 @@ curl -X POST http://localhost:8000/query \
 | FAISS 인덱스 로드 실패 | 인덱스 파일 손상 | `POST /admin/rebuild-index` 호출 |
 | `section_header: null` 반환 | 폰트/bold 탐지 실패 | `rebuild-index` 후 표준 arXiv PDF는 자동 탐지됨 |
 | `status: partial` 반환 | 메타데이터 누락 또는 단측 retrieval | `warnings` 필드 내용 확인 |
+| `Metric label mismatch` 경고 | P12 라벨 재할당 탐지 | 인용 소스 테이블과 메트릭 이름 직접 확인 |
+| `Numeric hallucination suspected` 경고 | P13 비정상 수치 탐지 | 원문 문서에서 해당 수치 직접 확인 |
 | PDF 파싱 실패 | 암호화/손상된 PDF | 에러 응답의 `detail` 필드 확인 |

@@ -1,13 +1,13 @@
 # Evaluation Rubric — OnDevice Scholar RAG
 
-**Version:** 1.1.0  
+**Version:** 1.2.0  
 **Reference:** SRS §10 Acceptance Criteria
 
 ---
 
 ## 평가 목적 | Purpose
 
-이 평가 기준은 OnDevice Scholar RAG 시스템이 SRS v1.1.0에 정의된 기능적·비기능적 요구사항을 충족하는지 검증하기 위한 기준입니다.  
+이 평가 기준은 OnDevice Scholar RAG 시스템이 SRS v1.2.0에 정의된 기능적·비기능적 요구사항을 충족하는지 검증하기 위한 기준입니다.  
 각 항목은 Pass / Fail / Partial 로 평가됩니다.
 
 ---
@@ -105,6 +105,18 @@
 
 ---
 
+## 10. 답변 품질 — 할루시네이션 방어 | Answer Quality & Hallucination Defense
+
+| ID | 항목 | 검증 방법 | Pass 조건 |
+| :--- | :--- | :--- | :--- |
+| AQ-1 | Metric label fidelity (P12) | 테이블 수치 포함 쿼리 10건 검토 | 답변의 수치 라벨이 소스 테이블 라벨과 일치, P12 warning 0건 |
+| AQ-2 | Numeric existence (P13) | 생성된 % 수치를 retrieved 청크와 대조 | 청크에 없는 수치 답변 포함 시 P13 warning 발생, 실제 할루 0건 |
+| AQ-3 | Verbatim metric rule (Rule 9) | 복수 메트릭 테이블 관련 쿼리 5건 | 메트릭 이름 재라벨링 없음 |
+| AQ-4 | Time-bounded SOTA (Rule 10) | SOTA 표현 포함 답변 5건 검토 | `at the time of publication` 문구 포함 또는 SOTA 표현 생략 |
+| AQ-5 | Partial question handling (Rule 3a/FR-36) | 일부만 커버 가능한 복합 쿼리 5건 | 미커버 sub-topic에 대해 `not reported in the provided documents` 명시 |
+
+---
+
 ## 평가 결과 기록 양식 | Score Sheet
 
 | 카테고리 | 총 항목 | Pass | Fail | Partial | 비고 |
@@ -118,12 +130,13 @@
 | 문서 생명주기 | 4 | | | | |
 | 보안 | 3 | | | | |
 | 에러 응답 | 2 | | | | |
-| **합계** | **28** | | | | |
+| 답변 품질/할루 방어 | 5 | | | | |
+| **합계** | **33** | | | | |
 
 ---
 
 ## Pass 기준 | Overall Pass Threshold
 
-- **전체 통과:** Pass 25/28 이상 (89%), Fail 0건
-- **조건부 통과:** Pass 22/28 이상, Fail 항목이 성능 카테고리에만 해당
-- **미통과:** Fail이 프라이버시(P), 인용(C), 보안(S) 카테고리에 1건 이상 존재
+- **전체 통과:** Pass 29/33 이상 (88%), Fail 0건
+- **조건부 통과:** Pass 26/33 이상, Fail 항목이 성능 카테고리에만 해당
+- **미통과:** Fail이 프라이버시(P), 인용(C), 보안(S), 답변품질(AQ) 카테고리에 1건 이상 존재

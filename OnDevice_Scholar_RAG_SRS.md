@@ -1,10 +1,10 @@
 # Software Requirements Specification (SRS)
 
 **Project:** Secure On-Device RAG Pipeline for Academic Research  
-**Version:** 1.1.0  
-**Lead Architect:** Edwin R. Cho (Hyun Heum Cho)  
+**Version:** 1.2.0  
+**Lead Architect:** Edwin R. Cho
 **Target Platform:** Local Edge Devices (Optimized for Apple Silicon MPS)  
-**Last Updated:** 2026-03-24  
+**Last Updated:** 2026-03-26  
 
 ---
 
@@ -239,14 +239,32 @@ Every factual answer returned by the system shall include source grounding, at m
 - section name when available
 
 ### FR-24 Citation Validator
+
 The system shall validate that generated responses include citations in the required format before returning them to the user. If citations are missing, the response shall be rejected and replaced with a safe fallback.
 
 ### FR-25 Ignorance Fallback
 If relevant information is not found, the system shall return one of the following safe responses:
+
 - `I don't know based on the provided documents.`
 - `No relevant information found in the provided documents.`
 
 The system shall not fabricate an answer under insufficient evidence conditions.
+
+### FR-36 Partial Question Handling
+
+If a multi-part question is only partially answerable from the retrieved context, the system shall:
+
+- answer all covered sub-parts with inline citations
+- explicitly state that uncovered sub-parts are not reported in the provided documents
+- not silently skip any sub-part of the question
+
+### FR-37 Metric Label Fidelity Check (P12)
+
+After generation, the system shall verify that percentage values in the answer are associated with label contexts that match those in the retrieved chunks. If label context word overlap is zero, a `partial` status warning shall be appended to the response.
+
+### FR-38 Numeric Existence Check (P13)
+
+After generation, the system shall verify that percentage values present in the answer actually appear verbatim in at least one retrieved chunk. Values present only in the answer and absent from all retrieved chunks shall trigger a hallucination warning in the response.
 
 ---
 
@@ -254,6 +272,7 @@ The system shall not fabricate an answer under insufficient evidence conditions.
 
 ### FR-26 Document Deletion
 Authorized users shall be able to delete an indexed document. Deletion shall remove:
+
 - corresponding metadata entries
 - associated chunk records
 - vector references from the retrieval index
@@ -496,7 +515,20 @@ Example structure:
       "page_number": 7
     }
   ],
-  "status": "ok"
+  "status": "ok",
+  "warnings": []
+}
+```
+
+When post-generation checks detect anomalies:
+
+```json
+{
+  "status": "partial",
+  "warnings": [
+    "Metric label mismatch for 31.6%: answer uses 'person detection' but source context shows 'lane line iou'",
+    "Numeric hallucination suspected: 89.33% not found in retrieved context"
+  ]
 }
 ```
 
@@ -526,6 +558,11 @@ The system prompt shall instruct the model to:
 - avoid unsupported claims
 - cite every factual statement
 - return a fallback if evidence is missing
+- report qualitative findings even when exact numeric figures are absent (Rule 3)
+- answer covered sub-parts and explicitly mark uncovered sub-parts as unavailable (Rule 3a)
+- preserve exact metric names and values verbatim from source tables (Rule 9)
+- qualify any SOTA or superiority claims with the paper's publication context (Rule 10)
+- never insert a numeric value that does not appear verbatim in the retrieved context (Rule 11)
 
 ### 8.2 Reference Prompt Template
 
@@ -582,6 +619,9 @@ Documents and indexes shall remain on the local device unless explicitly deleted
 | Privacy | Offline execution | No runtime outbound requests |
 | Grounding | Citation coverage | 100% of factual responses include citations |
 | Safety | Fallback behavior | Irrelevant or low-confidence queries return fallback |
+| Answer Quality | Metric label fidelity (P12) | No metric label reassignment — P12 check produces zero warnings on correctly grounded answers |
+| Answer Quality | Numeric existence (P13) | No fabricated percentages — P13 check produces zero warnings on correctly grounded answers |
+| Answer Quality | Partial question handling | Multi-part queries with partial coverage explicitly state unavailability for uncovered sub-parts |
 | Performance | TTFT | Under 2 seconds on baseline hardware |
 | Efficiency | Peak memory | Stays within target local memory envelope |
 | Reliability | Recovery | Index corruption can be rebuilt from persisted state |
@@ -597,7 +637,7 @@ Documents and indexes shall remain on the local device unless explicitly deleted
 | Memory overflow | MPS inference may exceed available unified memory | Quantized model, serialized inference, smaller batch sizes |
 | Retrieval failure | Relevant chunk may not be surfaced in Top-K | Tune chunking, thresholding, K, and metadata quality |
 | Parsing noise | PDF extraction quality may be inconsistent | Add parser fallback strategies and structured error handling |
-| Hallucination risk | Model may answer beyond context | Strict prompt grounding, citation validator, fallback logic |
+| Hallucination risk | Model may answer beyond context | Strict prompt grounding (Rules 9–11), citation validator, fallback logic, P12 metric label check, P13 numeric existence check |
 | Operational misuse | Unauthorized local usage | Authentication and RBAC |
 | Scaling limitation | Edge device cannot support many concurrent users | Limit concurrency and queue requests |
 
@@ -605,29 +645,31 @@ Documents and indexes shall remain on the local device unless explicitly deleted
 
 ## 12. Out of Scope
 
-The following items are explicitly out of scope for version 1.1.0:
+The following items are explicitly out of scope for version 1.2.0:
 - LoRA fine-tuning or adapter training pipeline
 - multimodal retrieval over figures, tables, and images
 - OCR-heavy scanned PDF recovery pipeline
 - cloud synchronization
 - distributed multi-node deployment
-- browser-based full GUI frontend
 - mobile deployment
 - enterprise IAM integration
+
+> Note: A browser-based React Web UI (Phase 2) was delivered as of v2.0.0 and is now in scope.
 
 ---
 
 ## 13. Future Extensions
 
 Possible future versions may include:
+- session / conversation history (localStorage-based, in progress)
 - multilingual retrieval support
 - OCR integration for scanned documents
 - table-aware parsing
-- experiment tracking dashboard
-- local web interface
+- exploratory mode (LLM prior reasoning alongside citation-grounded answers)
 - document-level access control policies
 - domain-specific re-ranking
 - lab knowledge graph integration
+- mobile responsive layout
 
 ---
 
