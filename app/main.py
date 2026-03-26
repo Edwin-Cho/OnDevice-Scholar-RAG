@@ -29,7 +29,7 @@ from app.models.schemas import (
     TokenResponse,
 )
 from app.pipeline.embedder import Embedder
-from app.pipeline.generator import Generator
+from app.pipeline.generator import Generator, _check_metric_fidelity, _check_numeric_existence
 from app.pipeline.ingest import ingest_file, _make_document_id, _extract_numbered_section
 from app.pipeline.retriever import retrieve
 from app.pipeline.store import VectorStore
@@ -196,6 +196,8 @@ async def query(
         if missing:
             warnings.append(f"{c.source_filename}: {', '.join(missing)} missing")
     warnings += _single_source_warnings(body.query, citations)
+    warnings += _check_metric_fidelity(answer, retrieved)
+    warnings += _check_numeric_existence(answer, retrieved)
 
     return QueryResponse(
         answer=answer,

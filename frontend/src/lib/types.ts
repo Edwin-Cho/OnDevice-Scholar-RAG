@@ -12,7 +12,7 @@ export interface QueryResponse {
   answer: string;
   citations: Citation[];
   status: 'ok' | 'partial' | 'no_context';
-  warning?: string;
+  warnings?: string[];
 }
 
 export interface IngestResponse {

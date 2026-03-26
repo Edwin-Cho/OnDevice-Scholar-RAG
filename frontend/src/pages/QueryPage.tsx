@@ -129,10 +129,17 @@ function AssistantMessage({ msg, onCopy, copied, expanded, onToggleExpand }: {
           <div>
             <button
               onClick={() => onToggleExpand(msg.id)}
-              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition mb-2"
+              className={`flex items-center gap-1.5 text-xs transition mb-2 ${
+                msg.citations.length === 1
+                  ? 'text-amber-500/70 hover:text-amber-400'
+                  : 'text-slate-500 hover:text-slate-300'
+              }`}
             >
               {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-              Sources ({msg.citations.length})
+              {msg.citations.length === 1
+                ? <><AlertTriangle className="w-3 h-3" /> 1 source — verify independently</>
+                : `Sources (${msg.citations.length})`
+              }
             </button>
             {expanded && (
               <div className="grid gap-2">
@@ -217,7 +224,7 @@ export default function QueryPage() {
         content: res.answer,
         citations: res.citations,
         status: res.status,
-        warning: res.warning,
+        warning: res.warnings?.length ? res.warnings.join(' | ') : undefined,
       };
       setMessages((prev) => [...prev, assistantMsg]);
       setExpandedCitations((prev) => ({ ...prev, [msgId]: false }));

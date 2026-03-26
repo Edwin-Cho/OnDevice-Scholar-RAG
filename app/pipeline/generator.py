@@ -32,7 +32,10 @@ Rules:
    - BAD:  "BERT is trained on various pre-training tasks."
    - GOOD: "BERT is trained on exactly two pre-training tasks: MLM and NSP."
    - If the context lists exactly N items, say "exactly N" or list them explicitly.
-3. If the context does not contain enough information to answer, respond exactly with: "No relevant information found in the provided documents."
+3. If the context contains NO topic-relevant information whatsoever, respond exactly with: "No relevant information found in the provided documents."
+   - BAD: Returning this fallback when the context discusses the topic but lacks specific numbers.
+   - GOOD: If the context contains qualitative findings (e.g., "Adam outperforms SGD on average") but no exact figures, report the qualitative finding and state that specific numbers are not provided.
+   3a. PARTIAL QUESTIONS — If the context covers only SOME sub-parts of a multi-part question, answer the covered parts precisely and explicitly state for the uncovered parts: "[sub-topic] is not reported in the provided documents." Never silently skip a sub-question.
 4. Do NOT fabricate facts, authors, or findings not present in the context.
 5. SYNTHESIZE the content in your own words — do NOT copy sentences verbatim from the context.
 6. Replace all vague pronouns with explicit names: "Our method" → the paper/method name, "We" → "the authors of [paper]", "they" → the actual subject.
@@ -40,7 +43,19 @@ Rules:
 8. MATH — Wrap all mathematical expressions in LaTeX delimiters so they render correctly.
    - Inline math: $O(n^2)$, $d_{\text{model}}$, $\sqrt{d_k}$
    - Block math: $$\text{Attention}(Q,K,V) = \text{softmax}\!\left(\frac{QK^T}{\sqrt{d_k}}\right)V$$
-   - Never write bare: O(n^2), O(n log n), d_model — always wrap in $...$."""
+   - Never write bare: O(n^2), O(n log n), d_model — always wrap in $...$.
+9. TABLE / METRIC FIDELITY — When the context contains a table or list of metrics, report each metric using its EXACT name and value as written in the source. NEVER rename, merge, or reassign metric labels.
+   - BAD:  "Person Detection: 31.6%" when the source says "Lane Line IoU: 31.6%".
+   - GOOD: "Lane Line IoU: 31.6% [Source: ...]". Preserve every column/row header verbatim.
+   - If you are unsure which label belongs to a value, quote the source table directly rather than paraphrasing.
+10. TIME-BOUNDED CLAIMS — Never assert that a result is "state-of-the-art", "best", or "superior" without anchoring it to the paper's publication context.
+    - BAD:  "HybridNets achieves state-of-the-art performance on BDD100K."
+    - GOOD: "At the time of publication, HybridNets reported state-of-the-art performance on BDD100K [Source: ...]."
+    - If the context does not mention a publication date or comparison scope, omit the SOTA claim entirely.
+11. VERBATIM NUMERICS — Never insert a specific number (percentage, score, count) unless that exact value appears verbatim in the retrieved context.
+    - BAD:  "The average improvement is 89.33%" when the context only says "outperforms on average".
+    - GOOD: "The context states that Adam pre-training outperforms SGD on average [Source: ...] but provides no specific aggregate figure."
+    - If the context gives a trend/direction without an exact figure, describe the trend only."""
 
 
 def _build_context_block(retrieved: List[Tuple[dict, float]]) -> str:
@@ -48,7 +63,8 @@ def _build_context_block(retrieved: List[Tuple[dict, float]]) -> str:
     for meta, score in retrieved:
         filename = meta.get("source_filename", "unknown")
         page = meta.get("page_number", "?")
-        section = meta.get("section_header") or "—"
+        raw_header = meta.get("section_header")
+        section = (raw_header if raw_header and not _is_noise_header(raw_header) else None) or "—"
         text = meta.get("text", "")
         blocks.append(
             f"[Source: {filename} | Section: {section} | p.{page} | score: {score:.3f}]\n{text}"
@@ -70,6 +86,101 @@ def _extract_cited_sources(answer: str) -> set[str]:
     LLM 답변 텍스트에서 [Source: filename | ...] 패턴으로 인용된 파일명 추출.
     """
     return {m.group(1).strip() for m in _SOURCE_PATTERN.finditer(answer)}
+
+
+_METRIC_NUM_RE = re.compile(r'\b(\d+\.?\d*)\s*%')
+
+_METRIC_LABEL_STOPWORDS = frozenset({
+    'the', 'for', 'its', 'with', 'and', 'is', 'are', 'was', 'has',
+    'achieves', 'score', 'rate', 'value', 'result', 'performance',
+    'percentage', 'point', 'reaches', 'obtains', 'shows', 'gets',
+})
+
+
+def _metric_label_context(text: str, window: int = 60) -> dict[str, list[str]]:
+    """
+    Returns {num_str: [label word-sequences from surrounding context]}.
+    Extracts up to `window` chars before each XX.X% match.
+    """
+    result: dict[str, list[str]] = {}
+    for m in _METRIC_NUM_RE.finditer(text):
+        num = m.group(1)
+        start = max(0, m.start() - window)
+        ctx = text[start:m.start()]
+        words = [
+            w for w in re.findall(r'[A-Za-z]{3,}', ctx.lower())
+            if w not in _METRIC_LABEL_STOPWORDS
+        ]
+        if words:
+            result.setdefault(num, []).append(' '.join(words[-5:]))  # last 5 content words
+    return result
+
+
+def _check_numeric_existence(
+    answer: str,
+    retrieved: List[Tuple[dict, float]],
+) -> list[str]:
+    """
+    P13: Numeric existence check.
+    Any XX.X% value in the answer that does NOT appear verbatim in any
+    retrieved chunk is flagged as a potential hallucinated figure.
+    """
+    answer_nums = {m.group(1) for m in _METRIC_NUM_RE.finditer(answer)}
+    if not answer_nums:
+        return []
+
+    chunk_nums: set[str] = set()
+    for meta, _ in retrieved:
+        for m in _METRIC_NUM_RE.finditer(meta.get("text", "")):
+            chunk_nums.add(m.group(1))
+
+    hallucinated = sorted(answer_nums - chunk_nums, key=float)
+    if not hallucinated:
+        return []
+    return [
+        f"Numeric hallucination suspected: {', '.join(f'{n}%' for n in hallucinated)} "
+        f"not found in retrieved context"
+    ]
+
+
+def _check_metric_fidelity(
+    answer: str,
+    retrieved: List[Tuple[dict, float]],
+) -> list[str]:
+    """
+    P12: Metric label-value fidelity check.
+    For each XX.X% value in the answer, compare the surrounding label context
+    against the same value's context in the retrieved chunks.
+    Zero word-overlap → mismatch warning.
+    """
+    answer_map = _metric_label_context(answer)
+    if not answer_map:
+        return []
+
+    source_map: dict[str, list[str]] = {}
+    for meta, _ in retrieved:
+        for num, labels in _metric_label_context(meta.get("text", "")).items():
+            source_map.setdefault(num, []).extend(labels)
+
+    warnings: list[str] = []
+    for num, answer_labels in answer_map.items():
+        if num not in source_map:
+            continue  # number absent from context; harder to verify
+
+        source_words: set[str] = set()
+        for lbl in source_map[num]:
+            source_words.update(lbl.split())
+
+        for a_lbl in answer_labels:
+            a_words = set(a_lbl.split())
+            if a_words and not (a_words & source_words):
+                best_src = source_map[num][0] if source_map[num] else "unknown"
+                warnings.append(
+                    f"Metric label mismatch for {num}%: "
+                    f"answer uses '{a_lbl}' but source context shows '{best_src}'"
+                )
+
+    return warnings
 
 
 _CONTRIBUTION_STOPWORDS = frozenset({
@@ -254,13 +365,20 @@ class Generator:
 
         context = _build_context_block(retrieved)
         user_message = (
-            "Example of required answer format:\n"
+            "Examples of required answer format:\n\n"
             "Q: What optimizer does GPT-3 use?\n"
             "A: GPT-3 is trained using the Adam optimizer with a peak learning rate of 0.6×10⁻⁴ "
             "[Source: GPT3.pdf | Section: 2.1 | p.8].\n\n"
+            "Q: How does ModelFoo perform on BenchmarkX for TaskA, TaskB, and TaskC?\n"
+            "A: As reported at the time of publication, ModelFoo achieves TaskA score 92.3% and TaskB score 85.1% on BenchmarkX "
+            "[Source: foo_paper.pdf | Section: 4.2 | p.7]. "
+            "ModelFoo was noted to obtain state-of-the-art performance on BenchmarkX at the time of publication "
+            "[Source: foo_paper.pdf | Section: Abstract | p.1]. "
+            "A separate metric for TaskC is not reported in the provided documents.\n\n"
             f"Context:\n{context}\n\n"
             f"Question: {query}\n"
-            "Answer (follow the example format — include [Source: ...] after every factual claim):"
+            "Answer (follow the example format — include [Source: ...] after every factual claim, "
+            "preserve all metric names verbatim, and time-bound any SOTA claims):"
         )
 
         messages = [
