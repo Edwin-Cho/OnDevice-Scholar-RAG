@@ -3,7 +3,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { UserRole } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useEffect, useState } from 'react';
-import { BookOpen, MessageSquare, FolderOpen, Settings, LogOut, Wifi, WifiOff, Sun, Moon } from 'lucide-react';
+import { MessageSquare, FolderOpen, Settings, LogOut, Wifi, WifiOff, Sun, Moon } from 'lucide-react';
+import LiELogo from '@/components/LiELogo';
 
 const allNavItems = [
   { to: '/', icon: MessageSquare, label: 'Query', minRole: 'researcher' as UserRole },
@@ -63,17 +64,9 @@ export default function Layout() {
       <aside className="w-60 flex flex-col shrink-0 border-r"
         style={{ background: 'var(--sidebar-bg)', borderColor: 'var(--sidebar-border)' }}>
 
-        <div className="flex items-center gap-3 px-5 py-5 border-b" style={{ borderColor: 'var(--sidebar-border)' }}>
-          <div className="relative">
-            <div className="absolute inset-0 bg-slate-600/30 rounded-xl blur-sm" />
-            <div className="relative w-9 h-9 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center">
-              <BookOpen className="w-4 h-4 text-white" />
-            </div>
-          </div>
-          <div>
-            <p className="text-white font-semibold text-sm leading-tight">Scholar RAG</p>
-            <div className="mt-0.5"><HealthBadge /></div>
-          </div>
+        <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--sidebar-border)' }}>
+          <LiELogo />
+          <div className="mt-0.5"><HealthBadge /></div>
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5">

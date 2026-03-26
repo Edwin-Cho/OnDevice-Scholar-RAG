@@ -26,7 +26,7 @@
 
   .dark {
     --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    --foreground: 214 32% 91%;  /* off-white #e2e8f0 — halation 방지 */
     --card: 240 10% 3.9%;
     --card-foreground: 0 0% 98%;
     --popover: 240 10% 3.9%;
@@ -69,16 +69,16 @@
 
 /* ── Light mode: slate palette swap + structural overrides ────────────────── */
 html:not(.dark) {
-  --layout-bg: #f1f5f9;
-  --sidebar-bg: rgba(0, 0, 0, 0.03);
-  --sidebar-border: rgba(0, 0, 0, 0.08);
+  --layout-bg: #eaecf0;
+  --sidebar-bg: rgba(0, 0, 0, 0.04);
+  --sidebar-border: rgba(0, 0, 0, 0.09);
 
-  /* Invert dark slate backgrounds → light */
-  --color-slate-950: #ffffff;
-  --color-slate-900: #f8fafc;
-  --color-slate-800: #f1f5f9;
-  --color-slate-700: #e2e8f0;
-  --color-slate-600: #94a3b8;
+  /* Invert dark slate backgrounds → ivory/light-gray (not pure white) */
+  --color-slate-950: #f4f6f8;
+  --color-slate-900: #eef0f3;
+  --color-slate-800: #e5e9ee;
+  --color-slate-700: #d0d7e0;
+  --color-slate-600: #8896aa;
 
   /* Invert light slate text → dark */
   --color-slate-500: #64748b;
@@ -89,10 +89,9 @@ html:not(.dark) {
   --color-slate-50:  #020617;
 }
 
-/* text-white → dark text in light mode */
-html:not(.dark) .text-white {
-  color: #0f172a;
-}
+/* text-white 오버라이드 */
+html.dark .text-white    { color: #e2e8f0; }  /* dark mode: pure white → off-white (halation 방지) */
+html:not(.dark) .text-white { color: #0f172a; }  /* light mode: white → dark text */
 
 /* placeholder colors in light mode */
 html:not(.dark) .placeholder-slate-600::placeholder { color: #94a3b8; }

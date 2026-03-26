@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { BookOpen, Loader2, Lock, User } from 'lucide-react';
+import { Loader2, Lock, User } from 'lucide-react';
+import LiELogo from '@/components/LiELogo';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -39,14 +40,10 @@ export default function LoginPage() {
       <div className="w-full max-w-sm px-4 relative z-10">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="relative mb-5">
-            <div className="absolute inset-0 bg-indigo-500/20 rounded-2xl blur-lg" />
-            <div className="relative w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl flex items-center justify-center shadow-2xl">
-              <BookOpen className="w-8 h-8 text-white" />
-            </div>
+          <div className="mb-4">
+            <LiELogo height={48} showTagline />
           </div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Scholar RAG</h1>
-          <p className="text-slate-500 text-sm mt-1">OnDevice · Offline · Private</p>
+          <p className="text-slate-500 text-sm mt-2">OnDevice · Offline · Private</p>
         </div>
 
         {/* Card */}

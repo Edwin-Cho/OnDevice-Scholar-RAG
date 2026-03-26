@@ -80,7 +80,7 @@ function AssistantMessage({ msg, onCopy, copied, expanded, onToggleExpand }: {
           </div>
         )}
         <div className="relative group">
-          <div className="bg-slate-800/60 border border-slate-700/40 rounded-xl px-4 py-3 text-slate-200 text-sm leading-relaxed whitespace-pre-wrap">
+          <div className="bg-slate-800/60 border border-slate-700/40 rounded-xl px-4 py-3 text-slate-200 text-base leading-relaxed whitespace-pre-wrap">
             <MathRenderer text={msg.content} />
           </div>
           <button
@@ -247,7 +247,7 @@ export default function QueryPage() {
           <div key={msg.id}>
             {msg.role === 'user' ? (
               <div className="flex justify-end">
-                <div className="bg-indigo-600/80 border border-indigo-500/30 rounded-xl px-4 py-2.5 text-white text-sm max-w-[70%] whitespace-pre-wrap">
+                <div className="bg-indigo-600/80 border border-indigo-500/30 rounded-xl px-4 py-2.5 text-white text-[15px] max-w-[70%] whitespace-pre-wrap">
                   {msg.content}
                 </div>
               </div>
@@ -267,7 +267,7 @@ export default function QueryPage() {
             <div className="w-8 h-8 bg-indigo-700/50 border border-indigo-600/30 rounded-lg flex items-center justify-center shrink-0">
               <BookOpen className="w-4 h-4 text-indigo-300" />
             </div>
-            <div className="bg-slate-800/60 border border-slate-700/40 rounded-xl px-4 py-3 flex items-center gap-2 text-slate-400 text-sm">
+            <div className="bg-slate-800/60 border border-slate-700/40 rounded-xl px-4 py-3 flex items-center gap-2 text-slate-400 text-[15px]">
               <Loader2 className="w-4 h-4 animate-spin" /> Retrieving and generating…
             </div>
           </div>
@@ -284,7 +284,7 @@ export default function QueryPage() {
             onKeyDown={handleKeyDown}
             placeholder="Ask a question about your papers… (Enter to send, Shift+Enter for newline)"
             rows={2}
-            className="flex-1 bg-slate-900/80 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-600 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/60 focus:border-indigo-500/40 resize-none transition"
+            className="flex-1 bg-slate-900/80 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-600 text-[15px] focus:outline-none focus:ring-1 focus:ring-indigo-500/60 focus:border-indigo-500/40 resize-none transition"
           />
           <div className="flex flex-col gap-2 shrink-0">
             <select
