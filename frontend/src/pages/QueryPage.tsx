@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
 import type { Citation, QueryResponse } from '@/lib/types';
-import { Send, Loader2, BookOpen, AlertTriangle, ExternalLink, Copy, Check, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { Send, Loader2, BookOpen, AlertTriangle, ExternalLink, Copy, Check, Trash2, ChevronDown, ChevronUp, Sparkles, Search, ServerCrash } from 'lucide-react';
 import MathRenderer from '@/components/MathRenderer';
 
 interface Message {
@@ -11,6 +11,7 @@ interface Message {
   citations?: Citation[];
   status?: QueryResponse['status'];
   warning?: string;
+  error?: boolean;
 }
 
 const FALLBACK_QUERIES = [
@@ -67,6 +68,37 @@ function AssistantMessage({ msg, onCopy, copied, expanded, onToggleExpand }: {
   expanded: boolean;
   onToggleExpand: (id: string) => void;
 }) {
+  /* ── Backend error (network / server crash) ── */
+  if (msg.error) {
+    return (
+      <div className="flex gap-3">
+        <div className="w-8 h-8 bg-red-900/30 border border-red-700/30 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+          <ServerCrash className="w-4 h-4 text-red-400" />
+        </div>
+        <div className="bg-red-500/8 border border-red-500/20 rounded-xl px-4 py-3 space-y-0.5">
+          <p className="text-red-400 text-[15px] font-medium">Backend error</p>
+          <p className="text-red-400/60 text-sm">Failed to connect or process the request. Check the Health badge — the server may be down.</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── No relevant documents found ── */
+  if (msg.status === 'no_context') {
+    return (
+      <div className="flex gap-3">
+        <div className="w-8 h-8 bg-slate-800/60 border border-slate-700/30 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+          <Search className="w-4 h-4 text-slate-500" />
+        </div>
+        <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl px-4 py-3 space-y-1">
+          <p className="text-slate-300 text-[15px] font-medium">No relevant documents found</p>
+          <p className="text-slate-500 text-sm leading-relaxed">Your indexed papers don't contain information matching this query. Try rephrasing or using different keywords.</p>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── Normal / partial answer ── */
   return (
     <div className="flex gap-3">
       <div className="w-8 h-8 bg-indigo-700/50 border border-indigo-600/30 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
@@ -74,9 +106,12 @@ function AssistantMessage({ msg, onCopy, copied, expanded, onToggleExpand }: {
       </div>
       <div className="flex-1 space-y-3 min-w-0">
         {msg.warning && (
-          <div className="flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg px-3 py-2 text-yellow-400 text-xs">
-            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-            {msg.warning}
+          <div className="flex items-start gap-2.5 bg-amber-500/8 border border-amber-500/20 rounded-xl px-3.5 py-2.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <p className="text-amber-400 text-xs font-medium leading-tight">Partial results</p>
+              <p className="text-amber-400/60 text-xs mt-0.5 leading-snug">{msg.warning}</p>
+            </div>
           </div>
         )}
         <div className="relative group">
@@ -189,7 +224,7 @@ export default function QueryPage() {
     } catch {
       setMessages((prev) => [
         ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', content: 'Error: Failed to get a response. Please try again.' },
+        { id: (Date.now() + 1).toString(), role: 'assistant', content: '', error: true },
       ]);
     } finally {
       setLoading(false);
