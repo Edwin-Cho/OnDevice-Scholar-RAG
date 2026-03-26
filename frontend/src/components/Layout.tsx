@@ -58,12 +58,12 @@ export default function Layout() {
   return (
     <div className="flex h-screen text-white overflow-hidden" style={{ background: '#0a0a0f' }}>
       {/* Sidebar */}
-      <aside className="w-58 flex flex-col shrink-0 border-r"
+      <aside className="w-60 flex flex-col shrink-0 border-r"
         style={{ background: 'rgba(255,255,255,0.025)', borderColor: 'rgba(255,255,255,0.07)' }}>
 
         <div className="flex items-center gap-3 px-5 py-5 border-b" style={{ borderColor: 'rgba(255,255,255,0.07)' }}>
           <div className="relative">
-            <div className="absolute inset-0 bg-purple-500/40 rounded-xl blur-md" />
+            <div className="absolute inset-0 bg-slate-600/30 rounded-xl blur-sm" />
             <div className="relative w-9 h-9 bg-gradient-to-br from-purple-500 to-purple-700 rounded-xl flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-white" />
             </div>
@@ -83,16 +83,16 @@ export default function Layout() {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-150 ${
                   isActive
-                    ? 'bg-purple-500/15 text-purple-300 font-medium shadow-inner'
+                    ? 'bg-slate-700/60 text-slate-100 font-medium'
                     : 'text-slate-500 hover:text-slate-200 hover:bg-white/5'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-purple-400' : ''}`} />
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : ''}`} />
                   {label}
-                  {isActive && <span className="ml-auto w-1.5 h-1.5 bg-purple-400 rounded-full" />}
+                  {isActive && <span className="ml-auto w-1.5 h-1.5 bg-cyan-400 rounded-full" />}
                 </>
               )}
             </NavLink>

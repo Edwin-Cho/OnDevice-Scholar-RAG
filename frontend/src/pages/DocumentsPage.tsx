@@ -76,7 +76,7 @@ export default function DocumentsPage() {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors ${
-              dragging ? 'border-purple-500 bg-purple-500/10' : 'border-slate-700 hover:border-purple-600 hover:bg-slate-800/50'
+              dragging ? 'border-indigo-500 bg-indigo-500/8' : 'border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/50'
             }`}
           >
             <input
@@ -132,7 +132,7 @@ export default function DocumentsPage() {
                 value={deleteTarget}
                 onChange={(e) => setDeleteTarget(e.target.value)}
                 placeholder="filename.pdf"
-                className="flex-1 bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                className="flex-1 bg-slate-900/80 border border-slate-700/60 rounded-lg px-4 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500/60 focus:border-indigo-500/40 transition"
               />
               <button
                 onClick={() => void handleDelete()}
