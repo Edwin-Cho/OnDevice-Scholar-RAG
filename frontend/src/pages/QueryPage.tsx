@@ -1,18 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
-import type { Citation, QueryResponse } from '@/lib/types';
+import type { Citation, ChatMessage } from '@/lib/types';
+import { useSession } from '@/contexts/SessionContext';
+import { readSessions } from '@/lib/sessions';
 import { Send, Loader2, BookOpen, AlertTriangle, ExternalLink, Copy, Check, Trash2, ChevronDown, ChevronUp, Sparkles, Search, ServerCrash } from 'lucide-react';
 import MathRenderer from '@/components/MathRenderer';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  citations?: Citation[];
-  status?: QueryResponse['status'];
-  warning?: string;
-  error?: boolean;
-}
+type Message = ChatMessage;
 
 const FALLBACK_QUERIES = [
   'What is the attention mechanism?',
@@ -153,7 +147,13 @@ function AssistantMessage({ msg, onCopy, copied, expanded, onToggleExpand }: {
 }
 
 export default function QueryPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { currentId, persistMessages } = useSession();
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (!currentId) return [];
+    const session = readSessions().find((s) => s.id === currentId);
+    return (session?.messages as Message[]) ?? [];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [topK, setTopK] = useState(5);
@@ -225,13 +225,21 @@ export default function QueryPage() {
         status: res.status,
         warning: res.warnings?.length ? res.warnings.join(' | ') : undefined,
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+      setMessages((prev) => {
+        const next = [...prev, assistantMsg];
+        persistMessages(next);
+        return next;
+      });
       setExpandedCitations((prev) => ({ ...prev, [msgId]: false }));
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', content: '', error: true },
-      ]);
+      setMessages((prev) => {
+        const next = [
+          ...prev,
+          { id: (Date.now() + 1).toString(), role: 'assistant' as const, content: '', error: true },
+        ];
+        persistMessages(next);
+        return next;
+      });
     } finally {
       setLoading(false);
     }

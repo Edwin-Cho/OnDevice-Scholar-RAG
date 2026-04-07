@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import { SessionProvider, useSession } from '@/contexts/SessionContext';
 import Layout from '@/components/Layout';
 import LoginPage from '@/pages/LoginPage';
 import QueryPage from '@/pages/QueryPage';
@@ -10,6 +11,11 @@ import AdminPage from '@/pages/AdminPage';
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
+function QueryPageWithKey() {
+  const { currentId, sessionKey } = useSession();
+  return <QueryPage key={currentId ?? `new-${sessionKey}`} />;
 }
 
 function AppRoutes() {
@@ -24,7 +30,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="/" element={<QueryPage />} />
+        <Route path="/" element={<QueryPageWithKey />} />
         <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/admin" element={<AdminPage />} />
       </Route>
@@ -38,7 +44,9 @@ export default function App() {
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <SessionProvider>
+            <AppRoutes />
+          </SessionProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
