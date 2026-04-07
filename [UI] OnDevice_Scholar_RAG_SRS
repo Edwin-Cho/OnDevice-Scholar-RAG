@@ -1,0 +1,223 @@
+# Software Requirements Specification (SRS)
+# LiE Web UI — Phase 2
+
+**Project:** LiE (Light Inference Engine) — Web Frontend  
+**Version:** 2.0.0  
+**Lead Architect:** Edwin R. Cho (Hyun Heum Cho)  
+**Depends On:** LiE Backend SRS v1.1.0  
+**Tech Stack:** React 18 + Vite + shadcn/ui + Tailwind CSS  
+**Last Updated:** 2026-03-25
+
+---
+
+## 1. Introduction
+
+### 1.1 Purpose
+This document specifies the software requirements for the LiE Web UI, a browser-based frontend that provides researchers with a graphical interface to the LiE backend RAG pipeline. It extends SRS v1.1.0 by replacing terminal-based curl workflows with an accessible, role-aware web interface.
+
+### 1.2 Scope
+**In scope (v2.0.0 Standard):**
+- JWT-based login and session management
+- Natural language query interface with citation viewer
+- Document upload interface (`/ingest`)
+- Health status indicator
+
+**Out of scope (deferred to v2.1.0+):**
+- Document list, search, and deletion UI
+- Admin rebuild-index dashboard
+- RBAC role-differentiated UI branches
+- Mobile responsive layout
+- Dark mode
+
+### 1.3 Relationship to Backend
+The Web UI is a pure frontend client. It communicates exclusively with the LiE FastAPI backend over `localhost` HTTP. It introduces no new backend logic and makes no outbound requests beyond `localhost:8000`.
+
+---
+
+## 2. Operating Environment
+
+### 2.1 Runtime
+- **Browser:** Chrome 120+ / Safari 17+ / Firefox 121+
+- **Dev Server:** Vite (`localhost:5173`)
+- **Backend:** LiE FastAPI (`localhost:8000`)
+- **Node.js:** 20 LTS+
+
+### 2.2 Tech Stack
+
+| Layer | Choice | Reason |
+|-------|--------|--------|
+| Framework | React 18 + Vite | Fast HMR, lightweight bundle |
+| UI Components | shadcn/ui | High quality, copy-owned, Next.js-migratable |
+| Styling | Tailwind CSS v3 | Utility-first, consistent with shadcn |
+| HTTP Client | axios or fetch | Lightweight, no extra dependency required |
+| State | React Context + useState | Sufficient for Standard scope |
+| Auth State | localStorage (JWT) | Simple, matches backend Bearer token model |
+
+### 2.3 Deployment Model
+Served locally only. No CDN, no cloud hosting. Vite dev server or `vite build` + static file serving on localhost.
+
+---
+
+## 3. User Roles
+
+| Role | Login Required | Query | Upload |
+|------|---------------|-------|--------|
+| Researcher | ✅ | ✅ | ❌ |
+| Lab PI | ✅ | ✅ | ✅ |
+| Admin | ✅ | ✅ | ✅ |
+
+Role is determined by JWT payload returned from `POST /auth/token`. UI elements that exceed the user's role shall be hidden or disabled.
+
+---
+
+## 4. Functional Requirements
+
+### FR-UI-1: Login Page
+The system shall provide a login page with username and password fields.  
+On successful authentication, the JWT token shall be stored in `localStorage` and the user shall be redirected to the Query page.  
+On failure, a visible error message shall be displayed.
+
+### FR-UI-2: Protected Routes
+All pages except the login page shall require a valid JWT token.  
+If the token is missing or expired, the user shall be redirected to the login page automatically.
+
+### FR-UI-3: Query Interface
+The system shall provide a text input field for natural language queries.  
+The user shall be able to configure `top_k` (range: 1–10, default: 3) via a slider or input.  
+On submission, the frontend shall call `POST /query` with Bearer token authentication.
+
+### FR-UI-4: Answer Display
+The generated answer shall be rendered in a readable text area.  
+LaTeX expressions (`\( \)`, `\[ \]`) within the answer shall be rendered using a math rendering library (e.g., KaTeX).
+
+### FR-UI-5: Citation Viewer
+Each citation returned in the response shall be displayed as an expandable card showing:
+- `source_filename`
+- `section_header`
+- `page_number`
+- `score` (displayed as a percentage or progress bar)
+
+### FR-UI-6: Status and Warnings Display
+The response `status` field (`ok` / `partial`) shall be visually indicated.  
+Any `warnings` strings shall be displayed below the answer in a distinct color (e.g., amber).
+
+### FR-UI-7: Loading State
+While awaiting a response from the backend, the UI shall display a loading indicator.  
+The query submit button shall be disabled during the pending state to prevent duplicate requests.
+
+### FR-UI-8: Document Upload (Lab PI+ only)
+Users with Lab PI or Admin role shall see an Upload page accessible via navigation.  
+The page shall provide a file input accepting `.pdf`, `.md`, `.txt` files.  
+On upload, the frontend shall call `POST /ingest` with the file as `multipart/form-data`.  
+The result (chunks indexed, filename) shall be displayed upon completion.
+
+### FR-UI-9: Health Indicator
+The navigation bar shall display a backend health status badge.  
+The frontend shall call `GET /health` on page load and reflect the result (online / offline).
+
+### FR-UI-10: Logout
+The user shall be able to log out from the navigation bar.  
+Logout shall clear the JWT from `localStorage` and redirect to the login page.
+
+---
+
+## 5. Non-Functional Requirements
+
+### NFR-UI-1: Offline Compatibility
+The Web UI shall function without any external CDN or web font requests in production build mode.  
+All dependencies shall be bundled locally via Vite.
+
+### NFR-UI-2: Response Rendering Latency
+The UI shall render the backend response within 100ms of receiving it, excluding network latency.
+
+### NFR-UI-3: Token Security
+The JWT token shall be stored in `localStorage`.  
+The token shall never be logged to the browser console or exposed in URL parameters.
+
+### NFR-UI-4: Error Visibility
+All API errors (4xx, 5xx) shall surface a human-readable message in the UI.  
+Raw stack traces or internal error details shall not be displayed to end users.
+
+### NFR-UI-5: Extensibility
+Component structure shall be organized to allow addition of Admin and document management pages in v2.1.0 without refactoring existing components.
+
+---
+
+## 6. Page Structure
+/login → Login page (public)
+/query → Query interface (Researcher+)
+/upload → Document upload (Lab PI+)
+
+---
+
+## 7. Component Architecture
+src/
+├── components/
+│ ├── ui/ ← shadcn/ui generated components
+│ ├── CitationCard.tsx ← FR-UI-5
+│ ├── QueryForm.tsx ← FR-UI-3
+│ ├── AnswerPanel.tsx ← FR-UI-4, FR-UI-6
+│ ├── UploadForm.tsx ← FR-UI-8
+│ └── NavBar.tsx ← FR-UI-9, FR-UI-10
+├── pages/
+│ ├── LoginPage.tsx
+│ ├── QueryPage.tsx
+│ └── UploadPage.tsx
+├── context/
+│ └── AuthContext.tsx ← JWT state, role, login/logout
+├── lib/
+│ └── api.ts ← axios instance, Bearer token injection
+└── main.tsx
+
+
+---
+
+## 8. API Integration
+
+| UI Action | Backend Endpoint | Method |
+|-----------|-----------------|--------|
+| Login | `/auth/token` | POST |
+| Submit query | `/query` | POST |
+| Upload document | `/ingest` | POST |
+| Health check | `/health` | GET |
+
+All authenticated requests shall include `Authorization: Bearer <token>` header, injected automatically via an axios interceptor in `lib/api.ts`.
+
+---
+
+## 9. Acceptance Criteria
+
+| ID | Requirement | Pass Condition |
+|----|-------------|----------------|
+| AC-UI-1 | Login flow | JWT stored, redirect to /query on success |
+| AC-UI-2 | Protected route | Unauthenticated access redirects to /login |
+| AC-UI-3 | Query + citation | Answer and citation cards rendered correctly |
+| AC-UI-4 | LaTeX rendering | Math expressions render without raw backslashes |
+| AC-UI-5 | Partial status | `status: partial` + warnings displayed visually |
+| AC-UI-6 | Upload | File accepted, chunk count displayed on success |
+| AC-UI-7 | Health badge | Reflects backend availability on page load |
+| AC-UI-8 | Role guard | Upload page hidden from Researcher role |
+| AC-UI-9 | Offline bundle | No external network requests in production build |
+
+---
+
+## 10. Out of Scope (v2.1.0 Candidates)
+
+| Feature | Notes |
+|---------|-------|
+| Document list + delete UI | Requires `DELETE /document/{id}` integration |
+| Admin rebuild dashboard | Requires `POST /admin/rebuild-index` integration |
+| RBAC UI branching (full) | Admin-only views and user management |
+| Dark mode | Tailwind `dark:` classes, deferred |
+| Mobile layout | Responsive breakpoints, deferred |
+
+---
+
+## 11. Risks
+
+| Risk | Mitigation |
+|------|------------|
+| CORS error on localhost | Configure FastAPI `CORSMiddleware` for `localhost:5173` |
+| JWT expiry mid-session | Detect 401 response, auto-redirect to login |
+| LaTeX rendering bundle size | Use KaTeX (lighter than MathJax) |
+| shadcn/ui version drift | Pin component versions, copy-owned pattern |

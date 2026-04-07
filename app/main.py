@@ -31,7 +31,7 @@ from app.models.schemas import (
 from app.pipeline.embedder import Embedder
 from app.pipeline.generator import Generator, _check_metric_fidelity, _check_numeric_existence
 from app.pipeline.ingest import ingest_file, _make_document_id, _extract_numbered_section
-from app.pipeline.retriever import retrieve
+from app.pipeline.retriever import retrieve, retrieve_comparison, is_comparison_query
 from app.pipeline.store import VectorStore
 
 app = FastAPI(
@@ -147,12 +147,17 @@ def _sample_diverse_chunks(metadata: list, n_papers: int = 8) -> list[str]:
 @app.get("/suggest-queries", response_model=SuggestQueriesResponse, tags=["RAG"])
 async def suggest_queries(
     _user: dict = Depends(require_role(Role.RESEARCHER)),
+    refresh: bool = False,
 ) -> SuggestQueriesResponse:
     """
     인덱싱된 논문 청크를 기반으로 LLM이 답변 가능한 연구 질문 4개를 생성.
     최초 1회 생성 후 캐시 파일에 저장; 이후 요청은 캐시에서 즉시 반환.
+    refresh=true 전달 시 캐시를 삭제하고 재생성.
     캐시는 rebuild-index 호출 시 초기화됨.
     """
+    if refresh:
+        _SUGGEST_CACHE_PATH.unlink(missing_ok=True)
+
     if _SUGGEST_CACHE_PATH.exists():
         try:
             with open(_SUGGEST_CACHE_PATH, "r", encoding="utf-8") as f:
@@ -186,7 +191,10 @@ async def query(
     body: QueryRequest,
     _user: dict = Depends(require_role(Role.RESEARCHER)),
 ) -> QueryResponse:
-    retrieved = retrieve(body.query, top_k=body.top_k)
+    if is_comparison_query(body.query):
+        retrieved = retrieve_comparison(body.query, top_k=body.top_k)
+    else:
+        retrieved = retrieve(body.query, top_k=body.top_k)
     generator = Generator.get()
     answer, citations = generator.generate(body.query, retrieved)
 
@@ -199,11 +207,17 @@ async def query(
     warnings += _check_metric_fidelity(answer, retrieved)
     warnings += _check_numeric_existence(answer, retrieved)
 
+    retrieved_chunks = (
+        [meta["text"] for meta, _score in retrieved if "text" in meta]
+        if body.include_chunks else []
+    )
+
     return QueryResponse(
         answer=answer,
         citations=citations,
         status="partial" if warnings else "ok",
         warnings=warnings,
+        retrieved_chunks=retrieved_chunks,
     )
 
 

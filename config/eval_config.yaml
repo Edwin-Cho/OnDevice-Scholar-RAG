@@ -1,0 +1,107 @@
+# eval_config.yaml — RAGAS evaluation configuration for OnDevice Scholar RAG
+# Usage: python scripts/evaluate_rag.py [--config config/eval_config.yaml]
+
+# ── API Settings ──────────────────────────────────────────────────────────────
+api:
+  base_url: "http://localhost:8000"
+  username: "admin"
+  password: "admin1234"
+  top_k: 5
+
+# ── Judge LLM Settings ────────────────────────────────────────────────────────
+# mode: "openai" | "basic"
+#   openai → uses OpenAI API for RAGAS LLM judge (requires OPENAI_API_KEY env var)
+#   basic  → heuristic metrics only, no external LLM required
+judge:
+  mode: "basic"           # change to "openai" if you have OPENAI_API_KEY
+  openai_model: "gpt-4o-mini"
+
+# ── Output Settings ───────────────────────────────────────────────────────────
+output:
+  dir: "reports"
+  save_json: true
+  save_csv: true
+
+# ── Test Questions ────────────────────────────────────────────────────────────
+# Each item:
+#   question     (required)  : the query string
+#   ground_truth (optional)  : reference answer for context_recall metric
+#   category     (optional)  : for grouped reporting
+questions:
+  # Foundation Architecture
+  - question: "What are the two pre-training objectives used in BERT?"
+    ground_truth: "BERT uses masked language modeling (MLM) and next sentence prediction (NSP) as its two pre-training objectives."
+    category: "foundation"
+
+  - question: "How does the Transformer's self-attention mechanism compute attention scores?"
+    ground_truth: "Self-attention computes attention scores using dot products of query and key vectors, scaled by the square root of the key dimension, then applies softmax to get weights over value vectors."
+    category: "foundation"
+
+  - question: "What is the key difference between LoRA and full fine-tuning?"
+    ground_truth: "LoRA freezes the pretrained model weights and injects trainable low-rank decomposition matrices into each layer, significantly reducing the number of trainable parameters compared to full fine-tuning."
+    category: "efficient_ft"
+
+  - question: "How does FlashAttention reduce memory usage compared to standard attention?"
+    ground_truth: "FlashAttention uses tiling and recomputation to avoid materializing the full attention matrix in GPU HBM, reducing memory from O(N^2) to O(N) while maintaining exact attention computation."
+    category: "efficient_inference"
+
+  # RAG
+  - question: "What is the main contribution of the RAG paper by Lewis et al.?"
+    ground_truth: "RAG combines parametric memory (a pre-trained seq2seq model) with non-parametric memory (a dense vector index of Wikipedia) for knowledge-intensive NLP tasks."
+    category: "rag"
+
+  - question: "How does Self-RAG differ from standard RAG in terms of retrieval strategy?"
+    ground_truth: "Self-RAG trains the model to adaptively retrieve passages on-demand by generating special reflection tokens, rather than always retrieving at every generation step."
+    category: "rag"
+
+  - question: "What problem does GraphRAG solve that naive RAG cannot handle well?"
+    ground_truth: "GraphRAG addresses global queries that require synthesizing information across an entire corpus by building a knowledge graph and using community summaries for query-focused summarization."
+    category: "rag"
+
+  # VLA & Robotics
+  - question: "What is the key innovation of RT-2 compared to RT-1?"
+    ground_truth: "RT-2 uses a vision-language model pretrained on web data as its backbone and co-fine-tunes it on robot trajectory data, enabling emergent capabilities like reasoning and generalization to new tasks."
+    category: "vla"
+
+  - question: "How does Diffusion Policy represent robot action distributions?"
+    ground_truth: "Diffusion Policy represents robot actions as a conditional denoising diffusion process, modeling the action distribution as the output of a denoising diffusion probabilistic model conditioned on observations."
+    category: "vla"
+
+  # Multimodal
+  - question: "What training stages does LLaVA-1.5 use?"
+    ground_truth: "LLaVA-1.5 uses a two-stage training: first a feature alignment stage with a simple MLP connector, then visual instruction tuning with academic-task-oriented and language-only data."
+    category: "multimodal"
+
+  - question: "How does CLIP align visual and textual representations?"
+    ground_truth: "CLIP trains an image encoder and text encoder jointly using a contrastive loss on a large dataset of image-text pairs from the internet, maximizing similarity for matching pairs and minimizing it for non-matching pairs."
+    category: "multimodal"
+
+  # Reasoning
+  - question: "What is the chain-of-thought prompting technique?"
+    ground_truth: "Chain-of-thought prompting elicits multi-step reasoning in large language models by providing few-shot examples that include intermediate reasoning steps before the final answer."
+    category: "reasoning"
+
+  - question: "How does DeepSeek-R1 train reasoning capabilities without supervised chain-of-thought data?"
+    ground_truth: "DeepSeek-R1 uses Group Relative Policy Optimization (GRPO) reinforcement learning with accuracy and format rewards to develop reasoning capabilities from scratch, then applies rejection sampling and supervised fine-tuning for distillation."
+    category: "reasoning"
+
+  # Safety
+  - question: "What does Llama Guard classify?"
+    ground_truth: "Llama Guard is an LLM-based input-output safeguard model that classifies safety risks in both human prompts and AI responses according to a predefined taxonomy of harm categories."
+    category: "safety"
+
+  # 3D Vision
+  - question: "What is the core representation used in 3D Gaussian Splatting?"
+    ground_truth: "3D Gaussian Splatting represents scenes as a collection of 3D Gaussian primitives with learnable position, covariance, opacity, and spherical harmonic color coefficients, enabling real-time differentiable rasterization."
+    category: "3d_vision"
+
+  # On-device
+  - question: "What architectural choices does MobileLLM make to optimize language models for mobile devices?"
+    ground_truth: "MobileLLM prioritizes model depth over width, uses embedding sharing and grouped query attention, and applies immediate block-wise weight sharing to improve parameter efficiency for sub-billion parameter language models."
+    category: "on_device"
+
+  - question: "How does RT-2 transfer web-scale knowledge to robot manipulation?"
+    category: "vla"
+
+  - question: "What problem does GraphRAG solve that naive RAG cannot handle?"
+    category: "rag_2024"

@@ -132,7 +132,7 @@ export default function DocumentsPage() {
                                 href={`https://arxiv.org/abs/${doc.arxiv_id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-cyan-600 hover:text-cyan-400 transition flex items-center gap-0.5"
+                                className="text-emerald-500 hover:text-emerald-400 transition flex items-center gap-0.5"
                                 onClick={(e) => e.stopPropagation()}
                               >
                                 <ExternalLink className="w-3 h-3" />
@@ -174,7 +174,7 @@ export default function DocumentsPage() {
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-colors ${
-              dragging ? 'border-indigo-500 bg-indigo-500/8' : 'border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/50'
+              dragging ? 'border-emerald-500 bg-emerald-500/8' : 'border-slate-700/60 hover:border-slate-600 hover:bg-slate-800/50'
             }`}
           >
             <input
@@ -191,7 +191,7 @@ export default function DocumentsPage() {
           </div>
 
           {uploading && (
-            <div className="flex items-center gap-2 mt-4 text-indigo-400 text-sm">
+            <div className="flex items-center gap-2 mt-4 text-emerald-400 text-sm">
               <Loader2 className="w-4 h-4 animate-spin" /> Uploading and indexing…
             </div>
           )}

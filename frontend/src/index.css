@@ -2,76 +2,77 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 262 83% 58%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 262 83% 58%;
+    --background: oklch(1 0 0);
+    --foreground: oklch(0.145 0.01 264);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.145 0.01 264);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.145 0.01 264);
+    --primary: oklch(0.65 0.15 145);       /* terminal green — on-device identity */
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.97 0.005 264);
+    --secondary-foreground: oklch(0.205 0.01 264);
+    --muted: oklch(0.97 0.005 264);
+    --muted-foreground: oklch(0.50 0.015 264);
+    --accent: oklch(0.97 0.005 264);
+    --accent-foreground: oklch(0.205 0.01 264);
+    --destructive: oklch(0.577 0.245 27.3);
+    --destructive-foreground: oklch(0.985 0 0);
+    --border: oklch(0.92 0.005 264);
+    --input: oklch(0.92 0.005 264);
+    --ring: oklch(0.65 0.15 145);          /* terminal green */
     --radius: 0.5rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 214 32% 91%;  /* off-white #e2e8f0 — halation 방지 */
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 263 70% 65%;
-    --primary-foreground: 240 5.9% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 263 70% 65%;
+    --background: oklch(0.145 0.01 264);
+    --foreground: oklch(0.88 0.01 214);    /* off-white — halation 방지 */
+    --card: oklch(0.145 0.01 264);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.145 0.01 264);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.70 0.15 145);       /* terminal green, dark에서 약간 밝게 */
+    --primary-foreground: oklch(0.145 0.01 264);
+    --secondary: oklch(0.22 0.01 264);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.22 0.01 264);
+    --muted-foreground: oklch(0.61 0.01 264);
+    --accent: oklch(0.22 0.01 264);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.396 0.141 25.7);
+    --destructive-foreground: oklch(0.985 0 0);
+    --border: oklch(0.22 0.01 264);
+    --input: oklch(0.22 0.01 264);
+    --ring: oklch(0.70 0.15 145);          /* terminal green */
   }
 }
 
 @layer base {
   * {
-    border-color: hsl(var(--border));
+    border-color: var(--border);
   }
   body {
-    background-color: hsl(var(--background));
-    color: hsl(var(--foreground));
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
 }
 
-/* ── Layout structural CSS variables ─────────────────────────────────────── */
+/* ── Layout structural CSS variables ──────────────────────────────────────────── */
 :root {
   --layout-bg: #0a0a0f;
-  --sidebar-bg: rgba(255, 255, 255, 0.025);
-  --sidebar-border: rgba(255, 255, 255, 0.07);
+  --sidebar-bg: #111114;              /* solid surface — glassmorphism 제거 */
+  --sidebar-border: rgba(255, 255, 255, 0.06);
 }
 
 /* ── Light mode: slate palette swap + structural overrides ────────────────── */
 html:not(.dark) {
   --layout-bg: #eaecf0;
-  --sidebar-bg: rgba(0, 0, 0, 0.04);
-  --sidebar-border: rgba(0, 0, 0, 0.09);
+  --sidebar-bg: #f4f6f8;              /* solid surface */
+  --sidebar-border: rgba(0, 0, 0, 0.08);
 
   /* Invert dark slate backgrounds → ivory/light-gray (not pure white) */
   --color-slate-950: #f4f6f8;

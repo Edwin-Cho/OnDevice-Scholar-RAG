@@ -56,3 +56,20 @@ export interface DocumentListResponse {
   documents: DocumentItem[];
   total_chunks: number;
 }
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  citations?: Citation[];
+  status?: QueryResponse['status'];
+  warning?: string;
+  error?: boolean;
+}
+
+export interface Session {
+  id: string;
+  title: string;
+  createdAt: number;
+  messages: ChatMessage[];
+}

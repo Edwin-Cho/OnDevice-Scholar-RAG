@@ -280,5 +280,170 @@ download 1808.05377 "NAS_Survey"
 download 2110.04544 "CLIP_Adapter"
 download 2104.08691 "Prompt_Tuning"
 
+# VLA & Embodied AI
+download 2212.06817 "RT-1_Robotics_Transformer"
+download 2307.15818 "RT-2_VLA"
+download 2310.08864 "Open_X-Embodiment"
+download 2406.09246 "OpenVLA"
+download 2209.11171 "Code_as_Policies"
+download 2204.01691 "SayCan"
+download 2303.04137 "Diffusion_Policy"
+download 2305.16291 "Voyager"
+download 2311.01378 "RoboFlamingo"
+download 2309.10190 "EmbodiedGPT"
+download 2401.17539 "ManipLLM"
+
+# 2024-2025 Foundation LLMs
+download 2401.04088 "Mixtral_8x7B"
+download 2412.19437 "DeepSeek_V3"
+download 2408.01313 "Gemma_2"
+download 2402.00838 "OLMo"
+download 2310.16944 "Zephyr"
+download 2306.11644 "Phi_1"
+download 2309.05463 "Phi_1.5"
+download 2403.04652 "Yi_34B"
+download 2403.19887 "Jamba"
+download 2402.07827 "Aya_101"
+download 2405.16338 "Phi_3.5_Mini"
+download 2403.17297 "InternLM_2"
+
+# Multimodal 2024-2025
+download 2310.03744 "LLaVA_1.5"
+download 2404.16821 "InternVL_1.5"
+download 2409.12191 "Qwen2_VL"
+download 2405.02246 "Idefics2"
+download 2312.13286 "Emu2"
+download 2306.16527 "IDEFICS"
+download 2408.00714 "SAM_2"
+download 2412.05271 "InternVL_2.5"
+download 2404.02882 "MiniCPM_V"
+download 2406.16860 "LLaVA_NeXT_Video"
+download 2406.07476 "VideoLLaMA2"
+download 2405.09841 "LLaVA_NeXT_Interleave"
+
+# Long Context & Memory
+download 2309.12307 "LongLoRA"
+download 2310.06839 "Ring_Attention"
+download 2308.14508 "LongBench"
+download 2310.07600 "MemGPT"
+download 2402.14848 "Infini_Attention"
+download 2309.00071 "YaRN"
+
+# Efficient Fine-tuning 2024
+download 2402.09353 "DoRA"
+download 2403.03507 "GaLore"
+download 2307.13269 "LoRAHub"
+download 2309.14717 "LoftQ"
+
+# 3D Vision & NeRF
+download 2003.08934 "NeRF"
+download 2103.13415 "Mip_NeRF"
+download 2201.05989 "Instant_NGP"
+download 2308.04079 "3D_Gaussian_Splatting"
+download 2304.06706 "Zip_NeRF"
+download 2309.07920 "GaussianAvatars"
+
+# Video Generation
+download 2209.14430 "Make-A-Video"
+download 2307.04725 "AnimateDiff"
+download 2311.17062 "AnimateDiff_V2"
+download 2309.13038 "Show-1"
+download 2406.05358 "CogVideoX"
+download 2312.14730 "VideoPoet"
+
+# RAG & Retrieval 2024
+download 2404.16130 "GraphRAG"
+download 2312.10997 "RAG_Survey_2024"
+download 2405.14831 "HippoRAG"
+download 2410.05779 "LightRAG"
+download 2403.14403 "Adaptive_RAG"
+download 2407.16526 "LongRAG"
+download 2404.06283 "RAFT"
+download 2310.11511 "FLARE"
+
+# Agentic AI 2024
+download 2309.03409 "OPRO"
+download 2303.17760 "CAMEL"
+download 2307.07924 "ChatDev"
+download 2308.10848 "AgentVerse"
+download 2406.12753 "AGENTLESS"
+download 2402.01817 "OSWorld"
+
+# Safety & Alignment 2024
+download 2312.06674 "Llama_Guard"
+download 2310.01405 "Representation_Engineering"
+download 2309.00267 "RLAIF"
+download 2401.01335 "SPIN_Self_Play"
+download 2406.04040 "Llama_Guard_2"
+download 2404.14054 "WildGuard"
+
+# Benchmarks 2024
+download 2310.02255 "MathVista"
+download 2311.07911 "IFEval"
+download 2406.04770 "MMLU_Pro"
+download 2406.19314 "LiveBench"
+download 2307.13854 "WebArena"
+download 2404.14022 "WildBench"
+download 2311.12022 "HaluEval"
+
+# Code Generation 2024
+download 2406.11931 "DeepSeek_Coder_V2"
+download 2402.19173 "StarCoder2"
+download 2312.02120 "Magicoder"
+download 2407.01461 "CRUXEval"
+
+# On-Device & Edge AI
+download 2402.14905 "MobileLLM"
+download 2312.11382 "On_Device_LLM_Survey"
+download 2406.02691 "EdgeShard"
+download 2405.14672 "LLM_Edge_Survey"
+download 2407.10019 "MobileVLM_V2"
+
+# Optimization & Training
+download 1412.6980  "Adam_Optimizer"
+download 2302.06675 "Lion_Optimizer"
+download 2305.14342 "Sophia_Optimizer"
+download 1904.00962 "LAMB_Optimizer"
+download 2006.16668 "GShard_MoE"
+download 2202.09368 "Expert_Choice_MoE"
+
+# NLP Architecture Classics
+download 1910.13461 "BART"
+download 2006.03654 "DeBERTa"
+download 2010.11934 "mT5"
+download 2108.12409 "ALiBi"
+download 1910.07467 "RMSNorm"
+download 1905.03197 "UniLM"
+
+# Multi-Agent
+download 2305.14325 "LLM_Society_of_Mind"
+download 2308.09830 "AgentSims"
+download 2211.01910 "APE_Auto_Prompt_Engineer"
+download 2309.16797 "Promptbreeder"
+
+# Continual & Federated Learning
+download 1612.00796 "EWC_Continual_Learning"
+download 1602.05629 "FedAvg"
+download 1812.06127 "FedProx"
+
+# Retrieval & Embedding 2024
+download 2401.00368 "E5_Mistral_Instruct"
+download 2402.15449 "NV_Embed"
+download 2405.04434 "BGE_M3"
+download 2404.12699 "Gecko_Embedding"
+
+# Reasoning 2024
+download 2411.14405 "Marco_o1"
+download 2401.10020 "Evol_Instruct_Reasoning"
+download 2312.11805 "SPIN_Reasoning"
+download 2406.12793 "Skywork_o1"
+
+# Vision Foundation 2024
+download 2303.05499 "Grounding_DINO"
+download 2205.06230 "OWL-ViT"
+download 2112.03857 "GLIP"
+download 2405.14458 "Grounding_DINO_1.5"
+download 2404.07177 "DINO_v2_Extended"
+
 echo ""
-echo "Done.  Success: $SUCCESS / Skip: $SKIP / Fail: $FAIL  (Total target: 200 papers)"
+echo "Done.  Success: $SUCCESS / Skip: $SKIP / Fail: $FAIL  (Total target: 500 papers)"

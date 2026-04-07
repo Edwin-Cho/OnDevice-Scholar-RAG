@@ -1,18 +1,12 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { api } from '@/lib/api';
-import type { Citation, QueryResponse } from '@/lib/types';
+import type { Citation, ChatMessage } from '@/lib/types';
+import { useSession } from '@/contexts/SessionContext';
+import { readSessions } from '@/lib/sessions';
 import { Send, Loader2, BookOpen, AlertTriangle, ExternalLink, Copy, Check, Trash2, ChevronDown, ChevronUp, Sparkles, Search, ServerCrash } from 'lucide-react';
 import MathRenderer from '@/components/MathRenderer';
 
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  citations?: Citation[];
-  status?: QueryResponse['status'];
-  warning?: string;
-  error?: boolean;
-}
+type Message = ChatMessage;
 
 const FALLBACK_QUERIES = [
   'What is the attention mechanism?',
@@ -23,7 +17,7 @@ const FALLBACK_QUERIES = [
 
 function ScoreBar({ score }: { score: number }) {
   const pct = Math.round(score * 100);
-  const color = score >= 0.8 ? '#6366f1' : score >= 0.65 ? '#4f46e5' : '#4b5563';
+  const color = score >= 0.8 ? '#10b981' : score >= 0.65 ? '#059669' : '#4b5563';
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1 rounded-full bg-white/5 overflow-hidden">
@@ -36,13 +30,12 @@ function ScoreBar({ score }: { score: number }) {
 
 function CitationCard({ c }: { c: Citation }) {
   return (
-    <div className="rounded-xl p-3 text-xs space-y-2 border"
-      style={{ background: 'rgba(255,255,255,0.03)', borderColor: 'rgba(255,255,255,0.07)' }}>
+    <div className="rounded-xl p-3 text-xs space-y-2 bg-slate-900 border border-slate-800">
       <div className="flex items-start justify-between gap-2">
         <span className="font-medium text-slate-100 leading-snug">{c.paper_title || c.source_filename}</span>
         {c.arxiv_id && (
           <a href={`https://arxiv.org/abs/${c.arxiv_id}`} target="_blank" rel="noopener noreferrer"
-            className="flex items-center gap-1 text-cyan-400/70 hover:text-cyan-300 transition shrink-0">
+            className="flex items-center gap-1 text-emerald-400/70 hover:text-emerald-300 transition shrink-0">
             arXiv <ExternalLink className="w-2.5 h-2.5" />
           </a>
         )}
@@ -101,8 +94,8 @@ function AssistantMessage({ msg, onCopy, copied, expanded, onToggleExpand }: {
   /* ── Normal / partial answer ── */
   return (
     <div className="flex gap-3">
-      <div className="w-8 h-8 bg-indigo-700/50 border border-indigo-600/30 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-        <BookOpen className="w-4 h-4 text-indigo-300" />
+      <div className="w-8 h-8 bg-emerald-900/50 border border-emerald-700/30 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+        <BookOpen className="w-4 h-4 text-emerald-400" />
       </div>
       <div className="flex-1 space-y-3 min-w-0">
         {msg.warning && (
@@ -154,7 +147,13 @@ function AssistantMessage({ msg, onCopy, copied, expanded, onToggleExpand }: {
 }
 
 export default function QueryPage() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { currentId, persistMessages } = useSession();
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    if (!currentId) return [];
+    const session = readSessions().find((s) => s.id === currentId);
+    return (session?.messages as Message[]) ?? [];
+  });
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [topK, setTopK] = useState(5);
@@ -181,10 +180,10 @@ export default function QueryPage() {
     ta.style.height = `${Math.min(ta.scrollHeight, MAX_TEXTAREA_HEIGHT)}px`;
   }, [input]);
 
-  const loadSuggestedQueries = useCallback(async () => {
+  const loadSuggestedQueries = useCallback(async (refresh = false) => {
     setSuggestLoading(true);
     try {
-      const res = await api.suggestQueries();
+      const res = await api.suggestQueries(refresh);
       setSuggestedQueries(res.questions.length >= 2 ? res.questions : FALLBACK_QUERIES);
     } catch {
       setSuggestedQueries(FALLBACK_QUERIES);
@@ -226,13 +225,21 @@ export default function QueryPage() {
         status: res.status,
         warning: res.warnings?.length ? res.warnings.join(' | ') : undefined,
       };
-      setMessages((prev) => [...prev, assistantMsg]);
+      setMessages((prev) => {
+        const next = [...prev, assistantMsg];
+        persistMessages(next);
+        return next;
+      });
       setExpandedCitations((prev) => ({ ...prev, [msgId]: false }));
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', content: '', error: true },
-      ]);
+      setMessages((prev) => {
+        const next = [
+          ...prev,
+          { id: (Date.now() + 1).toString(), role: 'assistant' as const, content: '', error: true },
+        ];
+        persistMessages(next);
+        return next;
+      });
     } finally {
       setLoading(false);
     }
@@ -271,8 +278,8 @@ export default function QueryPage() {
       <div className="flex-1 overflow-y-auto px-6 py-6 space-y-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center py-16">
-            <div className="w-14 h-14 bg-slate-800/80 border border-slate-700/50 rounded-2xl flex items-center justify-center mb-4">
-              <BookOpen className="w-7 h-7 text-slate-400" />
+            <div className="w-14 h-14 bg-emerald-900/40 border border-emerald-700/40 rounded-2xl flex items-center justify-center mb-4" style={{ boxShadow: '0 0 24px rgba(16,185,129,0.12)' }}>
+              <BookOpen className="w-7 h-7 text-emerald-400" />
             </div>
             <h3 className="text-white font-medium">Ask anything about your papers</h3>
             <p className="text-slate-500 text-sm mt-1.5 max-w-sm">Queries are answered using only your indexed documents with forced citations.</p>
@@ -295,8 +302,8 @@ export default function QueryPage() {
             </div>
             {!suggestLoading && (
               <button
-                onClick={() => void loadSuggestedQueries()}
-                className="mt-3 flex items-center gap-1.5 text-xs text-slate-600 hover:text-slate-400 transition"
+                onClick={() => void loadSuggestedQueries(true)}
+                className="mt-3 flex items-center gap-1.5 text-xs text-slate-600 hover:text-emerald-400 transition"
               >
                 <Sparkles className="w-3 h-3" /> Regenerate suggestions
               </button>
@@ -307,7 +314,7 @@ export default function QueryPage() {
           <div key={msg.id}>
             {msg.role === 'user' ? (
               <div className="flex justify-end">
-                <div className="bg-indigo-600/80 border border-indigo-500/30 rounded-xl px-4 py-2.5 text-white text-[15px] max-w-[70%] whitespace-pre-wrap">
+                <div className="bg-slate-700 border border-slate-600/40 rounded-xl px-4 py-2.5 text-white text-[15px] max-w-[70%] whitespace-pre-wrap">
                   {msg.content}
                 </div>
               </div>
@@ -324,8 +331,8 @@ export default function QueryPage() {
         ))}
         {loading && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 bg-indigo-700/50 border border-indigo-600/30 rounded-lg flex items-center justify-center shrink-0">
-              <BookOpen className="w-4 h-4 text-indigo-300" />
+            <div className="w-8 h-8 bg-emerald-900/50 border border-emerald-700/30 rounded-lg flex items-center justify-center shrink-0">
+              <BookOpen className="w-4 h-4 text-emerald-400" />
             </div>
             <div className="bg-slate-800/60 border border-slate-700/40 rounded-xl px-4 py-3 flex items-center gap-2 text-slate-400 text-[15px]">
               <Loader2 className="w-4 h-4 animate-spin" /> Retrieving and generating…
@@ -345,20 +352,20 @@ export default function QueryPage() {
             placeholder="Ask a question… (Enter to send, Shift+Enter for newline, Esc to clear)"
             rows={1}
             style={{ maxHeight: MAX_TEXTAREA_HEIGHT, overflowY: 'auto' }}
-            className="flex-1 bg-slate-900/80 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-600 text-[15px] focus:outline-none focus:ring-1 focus:ring-indigo-500/60 focus:border-indigo-500/40 resize-none transition"
+            className="flex-1 bg-slate-900/80 border border-slate-700/60 rounded-xl px-4 py-3 text-white placeholder-slate-600 text-[15px] focus:outline-none focus:ring-1 focus:ring-emerald-500/60 focus:border-emerald-500/40 resize-none transition"
           />
           <div className="flex flex-col gap-2 shrink-0">
             <select
               value={topK}
               onChange={(e) => setTopK(Number(e.target.value))}
-              className="bg-slate-800/80 border border-slate-700/60 rounded-lg px-2 py-1.5 text-slate-400 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500/60 cursor-pointer"
+              className="bg-slate-800/80 border border-slate-700/60 rounded-lg px-2 py-1.5 text-slate-400 text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500/60 cursor-pointer"
             >
               {[3, 5, 10, 15].map((v) => <option key={v} value={v}>K={v}</option>)}
             </select>
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="h-9 px-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg flex items-center justify-center transition"
+              className="h-9 px-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg flex items-center justify-center transition"
             >
               <Send className="w-4 h-4 text-white" />
             </button>

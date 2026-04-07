@@ -39,8 +39,8 @@ export const api = {
     return res.data;
   },
 
-  suggestQueries: async (): Promise<SuggestQueriesResponse> => {
-    const res = await client.get<SuggestQueriesResponse>('/suggest-queries');
+  suggestQueries: async (refresh = false): Promise<SuggestQueriesResponse> => {
+    const res = await client.get<SuggestQueriesResponse>('/suggest-queries', { params: refresh ? { refresh: true } : {} });
     return res.data;
   },
 

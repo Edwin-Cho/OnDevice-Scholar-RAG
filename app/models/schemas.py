@@ -37,6 +37,7 @@ class IngestResponse(BaseModel):
 class QueryRequest(BaseModel):
     query: str = Field(..., min_length=1, max_length=2048)
     top_k: int = Field(default=5, ge=1, le=20)
+    include_chunks: bool = Field(default=False, description="If true, return raw retrieved chunk texts for evaluation purposes.")
 
 
 class Citation(BaseModel):
@@ -54,6 +55,7 @@ class QueryResponse(BaseModel):
     citations: List[Citation] = []
     status: str = "ok"
     warnings: List[str] = []
+    retrieved_chunks: List[str] = Field(default=[], description="Raw retrieved chunk texts. Populated only when include_chunks=True.")
 
 
 # ── Document Delete ─────────────────────────────────────────────────────────

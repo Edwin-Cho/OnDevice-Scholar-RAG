@@ -45,7 +45,7 @@ export default function AdminPage() {
             <button
               onClick={() => void handleRebuild()}
               disabled={rebuilding}
-              className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shrink-0"
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white px-5 py-2.5 rounded-lg text-sm font-medium transition shrink-0"
             >
               {rebuilding ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
               {rebuilding ? 'Rebuilding…' : 'Rebuild'}

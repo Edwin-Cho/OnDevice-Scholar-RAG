@@ -746,4 +746,244 @@ re.compile(r'^\d{3,}\s'),  # 3+ digit leading integer: table row "199 ResNet101x
 
 ---
 
-*작성일: 2026-03-24 ~ 03-26 / 작성자: Edwin R. Cho*
+---
+
+## 2026-04-05 (Sat)
+
+**작업자:** Edwin R. Cho
+**작업 시간:** 22:00 — 24:00 KST
+**주요 목표:** 논문 데이터셋 확장 + RAGAS 평가 파이프라인 구현 + 할루시네이션 방어 고도화
+
+---
+
+### 1. 논문 데이터셋 확장
+
+**목표:** 200편 → 500편 (단계적 목표)
+
+**변경 (`download_papers.sh` / `download_papers.ps1`):**
+- 신규 카테고리 추가: VLA/로보틱스, 3D 비전 (Gaussian Splatting 등), 멀티모달 (CLIP, LLaVA 계열), On-device LLM, 안전성/정렬
+- `.ps1` 파일도 동일하게 동기화
+
+**인덱스 재빌드 결과:**
+
+| 지표 | 이전 | 이후 |
+| --- | --- | --- |
+| 문서 수 | 200편 | 325편 |
+| 청크 수 | 24,204 | 38,022 |
+
+---
+
+### 2. RAGAS 평가 파이프라인 구현
+
+**목적:** RAG 시스템 성능을 정량적으로 측정하는 재현 가능한 평가 체계 구축
+
+#### 스키마 수정 (`app/models/schemas.py`)
+
+```python
+class QueryRequest(BaseModel):
+    include_chunks: bool = Field(default=False,
+        description="If true, return raw retrieved chunk texts for evaluation.")
+
+class QueryResponse(BaseModel):
+    retrieved_chunks: List[str] = Field(default=[],
+        description="Raw retrieved chunk texts. Populated only when include_chunks=True.")
+```
+
+#### 엔드포인트 수정 (`app/main.py`)
+
+- `/query` 엔드포인트: `include_chunks=True` 시 검색된 청크 원문을 응답에 포함
+
+#### 평가 설정 파일 신규 생성 (`config/eval_config.yaml`)
+
+- 18개 테스트 질문 / 10개 카테고리 (foundation, efficient_ft, rag, vla, multimodal, reasoning, safety, 3d_vision, on_device, rag_2024)
+- Judge 모드: `basic` (휴리스틱 전용) / `openai` (RAGAS LLM judge)
+- 출력 경로: `reports/` (JSON + CSV)
+
+#### 평가 스크립트 신규 생성 (`scripts/evaluate_rag.py`)
+
+**Basic 모드 지표:**
+
+| 지표 | 설명 |
+| --- | --- |
+| `no_context_rate` | FALLBACK 응답 비율 |
+| `retrieval_score_avg` | 검색 청크 평균 유사도 |
+| `citation_rate_avg` | 청크당 인용 발생률 |
+| `chunk_overlap_ratio_avg` | 답변-청크 단어 겹침 비율 (faithfulness proxy) |
+| `warnings_per_query` | 쿼리당 경고 수 |
+
+**의존성 추가 (`requirements.txt`):**
+- `pyyaml>=6.0.0`
+- `requests>=2.31.0`
+
+**초기 평가 결과 (`eval_basic_20260405_2230xx.json`):**
+
+| 지표 | 값 |
+| --- | --- |
+| `warnings_per_query` | 0.44 |
+| `total_warnings` | 8 |
+| `retrieval_score_avg` | 0.816 |
+| `chunk_overlap_ratio_avg` | 0.678 |
+| `no_context_rate` | 0.0 |
+
+---
+
+### 3. P12 False Positive 수정 (`app/pipeline/generator.py`)
+
+**문제:** `_check_metric_fidelity()`가 OCR 노이즈 / 일반 영어 구문을 metric label로 오인식
+- 예: `"lora noted have mean success"` → metric mismatch 경고 (false positive)
+
+**해결:**
+
+```python
+_METRIC_INDICATOR_WORDS = frozenset({
+    'accuracy', 'acc', 'precision', 'recall', 'f1', 'bleu', 'rouge',
+    'flop', 'flops', 'param', 'params', 'latency', 'throughput', ...
+})
+
+def _looks_like_metric_label(label: str) -> bool:
+    return bool(set(label.lower().split()) & _METRIC_INDICATOR_WORDS)
+```
+
+- `_check_metric_fidelity()`: `_looks_like_metric_label()` 통과 시에만 mismatch 비교
+
+**결과:** `efficient_ft` 카테고리 warnings 3.0 → 2.0 ✅
+
+---
+
+### 4. Rule 12 / Rule 13 추가 + Few-shot 보강 (`app/pipeline/generator.py`)
+
+#### SYSTEM_PROMPT 추가 규칙
+
+| 규칙 | 내용 |
+| --- | --- |
+| **Rule 12** | NUMERIC ABSTENTION — 컨텍스트에 없는 수치는 추정/반올림 금지. "not reported in retrieved passages" 명시 |
+| **Rule 13** | COMPARISON COMPLETENESS — 비교 쿼리(A vs B)에서 한쪽 문서만 검색 시 누락 측을 명시적으로 기재 |
+
+#### Few-shot 예시 추가
+
+```
+Q: What is the key difference between MethodA and MethodB in terms of parameter efficiency?
+A: MethodA freezes all pretrained weights and introduces small trainable adapter modules,
+   requiring far fewer updated parameters [Source: methodA.pdf | Section: 3 | p.5].
+   The exact percentage reduction is not reported in the retrieved passages.
+   Details on MethodB's parameter efficiency are not present in the retrieved documents.
+```
+
+---
+
+### 5. P15 — 비교 쿼리 서브-리트리벌 (`app/pipeline/retriever.py` + `app/main.py`)
+
+**문제 (P11):** "LoRA vs full fine-tuning" 쿼리 시 LoRA 청크만 검색 → full fine-tuning 측 컨텍스트 부재
+
+**해결 (`retriever.py`):**
+
+```python
+def is_comparison_query(query: str) -> bool:
+    # vs / versus / compared to / difference between / how does ... differ 탐지
+
+def retrieve_comparison(query, top_k) -> List[Tuple[dict, float]]:
+    # side_a, side_b 분리 추출
+    # retrieve(side_a, k_each) + retrieve(side_b, k_each) + retrieve(query, k_each)
+    # dedup by (source_filename, chunk_index) → top_k 반환
+```
+
+**`main.py` 라우팅:**
+
+```python
+if is_comparison_query(body.query):
+    retrieved = retrieve_comparison(body.query, top_k=body.top_k)
+else:
+    retrieved = retrieve(body.query, top_k=body.top_k)
+```
+
+---
+
+### 6. 최종 평가 결과 (`reports/eval_basic_20260405_234102.json`)
+
+| 지표 | Run 1 (초기) | Run 2 (P12 fix) | **Run 3 (P15+R12/13)** |
+| --- | --- | --- | --- |
+| `total_warnings` | 8 | 5 | **4** |
+| `warnings_per_query` | 0.44 | 0.28 | **0.22** |
+| `citation_rate_avg` | 0.182 | 0.182 | **0.205** |
+| `retrieval_score_avg` | 0.816 | 0.816 | **0.819** |
+| `efficient_ft` warnings | 3.0 | 2.0 | **1.0** |
+
+**잔존 경고 4건:** 전부 P13 수치 할루시네이션 (LLM parametric memory에서 수치 생성)
+→ 프롬프트 규칙만으로 완전 제거 불가; Tier 2 scrubbing 또는 CAD 필요
+
+---
+
+---
+
+## 2026-04-06 (Sun)
+
+**작업자:** Edwin R. Cho
+**작업 시간:** 09:00 — 10:00 KST
+**주요 목표:** 할루시네이션 한계 및 연구 방향 논의 + 연구 제안서 작성
+
+---
+
+### 아키텍처 논의 — Parametric vs. Contextual Knowledge Conflict
+
+**핵심 분석:**
+
+| 접근 | Privacy | 추론 비용 | No Retrain | 도메인 무관 | LiE 적합 |
+| --- | --- | --- | --- | --- | --- |
+| Prompt Rules 1–13 | ✅ | O(1) | ✅ | ✅ | ✅ |
+| Tier 2: Post-hoc Scrubbing | ✅ | **O(1)** | ✅ | ✅ | ✅ **핵심** |
+| Tier 3: CAD (2-pass) | ✅ | **2×** | ✅ | ✅ | ⚠️ 비용 충돌 |
+| RAFT | ✅ | 1× | ❌ | ❌ | ❌ |
+| Self-RAG | ✅ | 1× | ❌ (재훈련) | partial | ❌ |
+
+**결론:**
+
+- RAFT / Self-RAG: 새 도메인 추가 시 재학습 필요 → RAG 철학 훼손
+- CAD: privacy 적합하나 2× 추론 비용 → on-device 비용 철학과 충돌
+- **Tier 2 Scrubbing이 LiE의 모든 제약(privacy + 비용 + no-retrain)을 동시에 만족하는 유일한 접근**
+
+---
+
+### 연구 제안서 작성 (`docs/research_proposal_p13_hallucination.md`)
+
+**제목:** *"Lightweight Numeric Hallucination Suppression in Sub-5B RAG Systems: A Study on Parametric vs. Contextual Knowledge Conflict"*
+
+**구성:**
+- Abstract / Problem Statement (우리 eval 결과 수치 직접 인용)
+- Research Gap 테이블 (CAD, RAFT, Self-RAG, Knowledge Conflicts Survey, FActScore 등)
+- Tiered Suppression Pipeline 아키텍처 + 수식
+- E1~E5 실험 설계표
+- Related Work 섹션 (arXiv ID 포함)
+- Implementation Roadmap (파일 매핑)
+- Limitations & Future Work
+
+**핵심 기여 포인트:**
+1. Sub-5B on-device RAG에서 P13 numeric hallucination rate 첫 실증 측정
+2. Training-free Tiered Suppression Pipeline (Prompt → Scrubbing → CAD)
+3. RAFT와의 비교로 on-device 환경에서의 trade-off 명확화
+4. 재현 가능한 오픈소스 평가 프레임워크 (`scripts/evaluate_rag.py`)
+
+---
+
+## 현재 미완료 항목 (2026-04-07 기준)
+
+| ID | 내용 | 우선순위 |
+| --- | --- | --- |
+| ✅ | **P16: Post-hoc Citation Injection 구현** (`generator.py`) | 🔴 높음 |
+| — | Session/History: localStorage 기반 대화 세션 저장 + 목록 + 로드 | 🔴 높음 |
+| — | **Tier 2: P13 post-hoc number scrubbing 구현** (`generator.py`) | � 중간 |
+| — | 모바일 반응형 레이아웃 (SRS v2.1.0) | 🟢 낮음 |
+| — | 다크/라이트 모드 토글 (SRS v2.1.0) | 🟢 낮음 |
+
+**P16 Post-hoc Citation Injection (2026-04-07):**
+- `_inject_citations_post_hoc(answer, retrieved, min_overlap=0.25)` 추가
+- [Source:] 없는 문장 대상, 4글자 이상 단어 ≥5개 조건
+- retrieved 청크 word-overlap 계산 → best chunk citation 삽입
+- `generate()` 내 fallback 체크 이후, `_build_citations()` 이전 호출
+- 추가 inference 없음 — citation_rate_avg 0.20 → 목표 0.50+
+
+**미커밋 파일 목록:**
+- `app/pipeline/generator.py` (P16 추가)
+
+---
+
+*작성일: 2026-03-24 ~ 04-07 / 작성자: Edwin R. Cho*

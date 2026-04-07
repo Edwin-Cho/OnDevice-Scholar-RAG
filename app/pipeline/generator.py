@@ -55,7 +55,13 @@ Rules:
 11. VERBATIM NUMERICS — Never insert a specific number (percentage, score, count) unless that exact value appears verbatim in the retrieved context.
     - BAD:  "The average improvement is 89.33%" when the context only says "outperforms on average".
     - GOOD: "The context states that Adam pre-training outperforms SGD on average [Source: ...] but provides no specific aggregate figure."
-    - If the context gives a trend/direction without an exact figure, describe the trend only."""
+    - If the context gives a trend/direction without an exact figure, describe the trend only.
+12. NUMERIC ABSTENTION — When you want to include a precise figure but cannot find it verbatim in the retrieved passages, explicitly state the absence rather than estimating or rounding.
+    - BAD:  "LoRA reduces trainable parameters by approximately 60–70% compared to full fine-tuning." ← estimation not grounded in context
+    - GOOD: "LoRA drastically reduces the number of trainable parameters by injecting low-rank matrices [Source: LoRA.pdf | Section: 3 | p.4], but the exact reduction percentage is not reported in the retrieved passages."
+13. COMPARISON COMPLETENESS — When a question compares two entities (A vs B), if retrieved context covers only one side, explicitly note the missing side rather than answering only about the covered entity.
+    - BAD:  Answering only about LoRA when asked "LoRA vs full fine-tuning".
+    - GOOD: Answer what the context provides about each side; for the uncovered side write "[entity] details are not present in the retrieved documents." """
 
 
 def _build_context_block(retrieved: List[Tuple[dict, float]]) -> str:
@@ -95,6 +101,21 @@ _METRIC_LABEL_STOPWORDS = frozenset({
     'achieves', 'score', 'rate', 'value', 'result', 'performance',
     'percentage', 'point', 'reaches', 'obtains', 'shows', 'gets',
 })
+
+_METRIC_INDICATOR_WORDS = frozenset({
+    'accuracy', 'acc', 'precision', 'recall', 'f1', 'bleu', 'rouge',
+    'top1', 'top5', 'map', 'ndcg', 'mrr', 'perplexity', 'wer', 'cer',
+    'flop', 'flops', 'param', 'params', 'latency', 'throughput', 'speedup',
+    'reduction', 'improvement', 'compression', 'trainable', 'parameters',
+    'benchmark', 'error', 'loss', 'gain', 'drop', 'delta', 'baseline',
+})
+
+
+def _looks_like_metric_label(label: str) -> bool:
+    """Return True only if label contains at least one metric-specific indicator word.
+    Filters out garbled OCR text or generic English phrases.
+    """
+    return bool(set(label.lower().split()) & _METRIC_INDICATOR_WORDS)
 
 
 def _metric_label_context(text: str, window: int = 60) -> dict[str, list[str]]:
@@ -172,6 +193,8 @@ def _check_metric_fidelity(
             source_words.update(lbl.split())
 
         for a_lbl in answer_labels:
+            if not _looks_like_metric_label(a_lbl):
+                continue  # skip: garbled OCR or generic phrase, not a real metric label
             a_words = set(a_lbl.split())
             if a_words and not (a_words & source_words):
                 best_src = source_map[num][0] if source_map[num] else "unknown"
@@ -293,6 +316,59 @@ def _build_citations(retrieved: List[Tuple[dict, float]]) -> List[Citation]:
     return citations
 
 
+_SENT_SPLIT_RE = re.compile(r'(?<=[.!?])\s+')
+
+
+def _inject_citations_post_hoc(
+    answer: str,
+    retrieved: List[Tuple[dict, float]],
+    min_overlap: float = 0.25,
+) -> str:
+    """
+    Post-hoc Citation Injection (P16).
+    [Source:] 태그가 없는 문장마다 retrieved 청크와 word-overlap을 계산,
+    min_overlap 이상인 최적 청크의 citation을 문장 끝에 삽입.
+    추가 inference 없음 — O(sentences × chunks) 순수 문자열 연산.
+    """
+    sentences = _SENT_SPLIT_RE.split(answer)
+    result: list[str] = []
+
+    for sent in sentences:
+        if not sent.strip() or '[Source:' in sent:
+            result.append(sent)
+            continue
+
+        sent_words = set(re.findall(r'[a-zA-Z]{4,}', sent.lower()))
+        if len(sent_words) < 5:
+            result.append(sent)
+            continue
+
+        best_overlap = 0.0
+        best_meta: dict | None = None
+
+        for meta, score in retrieved:
+            if score < settings.citation_min_score:
+                continue
+            chunk_words = set(re.findall(r'[a-zA-Z]{4,}', meta.get("text", "").lower()))
+            if not chunk_words:
+                continue
+            overlap = len(sent_words & chunk_words) / len(sent_words)
+            if overlap > best_overlap:
+                best_overlap = overlap
+                best_meta = meta
+
+        if best_overlap >= min_overlap and best_meta:
+            filename = best_meta.get("source_filename", "unknown")
+            raw_header = best_meta.get("section_header")
+            section = (raw_header if raw_header and not _is_noise_header(raw_header) else None) or "—"
+            page = best_meta.get("page_number", "?")
+            result.append(f"{sent} [Source: {filename} | Section: {section} | p.{page}]")
+        else:
+            result.append(sent)
+
+    return " ".join(result)
+
+
 class Generator:
     """
     Qwen2.5-3B-Instruct 추론 엔진.
@@ -375,6 +451,11 @@ class Generator:
             "ModelFoo was noted to obtain state-of-the-art performance on BenchmarkX at the time of publication "
             "[Source: foo_paper.pdf | Section: Abstract | p.1]. "
             "A separate metric for TaskC is not reported in the provided documents.\n\n"
+            "Q: What is the key difference between MethodA and MethodB in terms of parameter efficiency?\n"
+            "A: MethodA freezes all pretrained weights and introduces small trainable adapter modules, requiring far fewer updated parameters "
+            "[Source: methodA.pdf | Section: 3 | p.5]. "
+            "The exact percentage reduction in trainable parameters relative to MethodB is not reported in the retrieved passages. "
+            "Details on MethodB's parameter efficiency are not present in the retrieved documents.\n\n"
             f"Context:\n{context}\n\n"
             f"Question: {query}\n"
             "Answer (follow the example format — include [Source: ...] after every factual claim, "
@@ -409,6 +490,8 @@ class Generator:
 
         if not answer or _is_fallback(answer):
             return FALLBACK_ANSWER, []
+
+        answer = _inject_citations_post_hoc(answer, retrieved)
 
         all_citations = _build_citations(retrieved)
 

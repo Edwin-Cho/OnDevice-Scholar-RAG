@@ -29,8 +29,8 @@ export default function LoginPage() {
   };
 
   const bgStyle = theme === 'dark'
-    ? { background: 'radial-gradient(ellipse at 60% 20%, #2d1b6940 0%, transparent 60%), radial-gradient(ellipse at 10% 80%, #1e3a5f30 0%, transparent 50%), #0a0a0f' }
-    : { background: 'radial-gradient(ellipse at 60% 20%, #e0e7ff60 0%, transparent 60%), radial-gradient(ellipse at 10% 80%, #dbeafe40 0%, transparent 50%), #f1f5f9' };
+    ? { background: 'radial-gradient(ellipse at 60% 20%, #0a2d1a40 0%, transparent 60%), radial-gradient(ellipse at 10% 80%, #0a1e1a30 0%, transparent 50%), #0a0a0f' }
+    : { background: 'radial-gradient(ellipse at 60% 20%, #d1fae560 0%, transparent 60%), radial-gradient(ellipse at 10% 80%, #dcfce740 0%, transparent 50%), #f1f5f9' };
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden"
@@ -47,7 +47,9 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="bg-white/[0.04] border border-white/10 rounded-2xl p-7 shadow-2xl backdrop-blur-md">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="h-0.5 bg-gradient-to-r from-emerald-500/0 via-emerald-500 to-emerald-500/0" />
+          <div className="p-7">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
@@ -57,7 +59,7 @@ export default function LoginPage() {
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Username"
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/60 focus:border-indigo-500/40 transition text-sm"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/60 focus:border-emerald-500/40 transition text-sm"
               />
             </div>
             <div className="relative">
@@ -68,7 +70,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
                 required
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-500/60 focus:border-indigo-500/40 transition text-sm"
+                className="w-full bg-slate-800/60 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500/60 focus:border-emerald-500/40 transition text-sm"
               />
             </div>
 
@@ -82,12 +84,13 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm mt-1"
+              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-3 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 text-sm mt-1"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {loading ? 'Authenticating…' : 'Sign In'}
             </button>
           </form>
+          </div>
         </div>
 
         <p className="text-center text-slate-500 text-xs mt-6">

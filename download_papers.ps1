@@ -282,5 +282,170 @@ Download-Paper "1808.05377" "NAS_Survey"
 Download-Paper "2110.04544" "CLIP_Adapter"
 Download-Paper "2104.08691" "Prompt_Tuning"
 
+# VLA & Embodied AI
+Download-Paper "2212.06817" "RT-1_Robotics_Transformer"
+Download-Paper "2307.15818" "RT-2_VLA"
+Download-Paper "2310.08864" "Open_X-Embodiment"
+Download-Paper "2406.09246" "OpenVLA"
+Download-Paper "2209.11171" "Code_as_Policies"
+Download-Paper "2204.01691" "SayCan"
+Download-Paper "2303.04137" "Diffusion_Policy"
+Download-Paper "2305.16291" "Voyager"
+Download-Paper "2311.01378" "RoboFlamingo"
+Download-Paper "2309.10190" "EmbodiedGPT"
+Download-Paper "2401.17539" "ManipLLM"
+
+# 2024-2025 Foundation LLMs
+Download-Paper "2401.04088" "Mixtral_8x7B"
+Download-Paper "2412.19437" "DeepSeek_V3"
+Download-Paper "2408.01313" "Gemma_2"
+Download-Paper "2402.00838" "OLMo"
+Download-Paper "2310.16944" "Zephyr"
+Download-Paper "2306.11644" "Phi_1"
+Download-Paper "2309.05463" "Phi_1.5"
+Download-Paper "2403.04652" "Yi_34B"
+Download-Paper "2403.19887" "Jamba"
+Download-Paper "2402.07827" "Aya_101"
+Download-Paper "2405.16338" "Phi_3.5_Mini"
+Download-Paper "2403.17297" "InternLM_2"
+
+# Multimodal 2024-2025
+Download-Paper "2310.03744" "LLaVA_1.5"
+Download-Paper "2404.16821" "InternVL_1.5"
+Download-Paper "2409.12191" "Qwen2_VL"
+Download-Paper "2405.02246" "Idefics2"
+Download-Paper "2312.13286" "Emu2"
+Download-Paper "2306.16527" "IDEFICS"
+Download-Paper "2408.00714" "SAM_2"
+Download-Paper "2412.05271" "InternVL_2.5"
+Download-Paper "2404.02882" "MiniCPM_V"
+Download-Paper "2406.16860" "LLaVA_NeXT_Video"
+Download-Paper "2406.07476" "VideoLLaMA2"
+Download-Paper "2405.09841" "LLaVA_NeXT_Interleave"
+
+# Long Context & Memory
+Download-Paper "2309.12307" "LongLoRA"
+Download-Paper "2310.06839" "Ring_Attention"
+Download-Paper "2308.14508" "LongBench"
+Download-Paper "2310.07600" "MemGPT"
+Download-Paper "2402.14848" "Infini_Attention"
+Download-Paper "2309.00071" "YaRN"
+
+# Efficient Fine-tuning 2024
+Download-Paper "2402.09353" "DoRA"
+Download-Paper "2403.03507" "GaLore"
+Download-Paper "2307.13269" "LoRAHub"
+Download-Paper "2309.14717" "LoftQ"
+
+# 3D Vision & NeRF
+Download-Paper "2003.08934" "NeRF"
+Download-Paper "2103.13415" "Mip_NeRF"
+Download-Paper "2201.05989" "Instant_NGP"
+Download-Paper "2308.04079" "3D_Gaussian_Splatting"
+Download-Paper "2304.06706" "Zip_NeRF"
+Download-Paper "2309.07920" "GaussianAvatars"
+
+# Video Generation
+Download-Paper "2209.14430" "Make-A-Video"
+Download-Paper "2307.04725" "AnimateDiff"
+Download-Paper "2311.17062" "AnimateDiff_V2"
+Download-Paper "2309.13038" "Show-1"
+Download-Paper "2406.05358" "CogVideoX"
+Download-Paper "2312.14730" "VideoPoet"
+
+# RAG & Retrieval 2024
+Download-Paper "2404.16130" "GraphRAG"
+Download-Paper "2312.10997" "RAG_Survey_2024"
+Download-Paper "2405.14831" "HippoRAG"
+Download-Paper "2410.05779" "LightRAG"
+Download-Paper "2403.14403" "Adaptive_RAG"
+Download-Paper "2407.16526" "LongRAG"
+Download-Paper "2404.06283" "RAFT"
+Download-Paper "2310.11511" "FLARE"
+
+# Agentic AI 2024
+Download-Paper "2309.03409" "OPRO"
+Download-Paper "2303.17760" "CAMEL"
+Download-Paper "2307.07924" "ChatDev"
+Download-Paper "2308.10848" "AgentVerse"
+Download-Paper "2406.12753" "AGENTLESS"
+Download-Paper "2402.01817" "OSWorld"
+
+# Safety & Alignment 2024
+Download-Paper "2312.06674" "Llama_Guard"
+Download-Paper "2310.01405" "Representation_Engineering"
+Download-Paper "2309.00267" "RLAIF"
+Download-Paper "2401.01335" "SPIN_Self_Play"
+Download-Paper "2406.04040" "Llama_Guard_2"
+Download-Paper "2404.14054" "WildGuard"
+
+# Benchmarks 2024
+Download-Paper "2310.02255" "MathVista"
+Download-Paper "2311.07911" "IFEval"
+Download-Paper "2406.04770" "MMLU_Pro"
+Download-Paper "2406.19314" "LiveBench"
+Download-Paper "2307.13854" "WebArena"
+Download-Paper "2404.14022" "WildBench"
+Download-Paper "2311.12022" "HaluEval"
+
+# Code Generation 2024
+Download-Paper "2406.11931" "DeepSeek_Coder_V2"
+Download-Paper "2402.19173" "StarCoder2"
+Download-Paper "2312.02120" "Magicoder"
+Download-Paper "2407.01461" "CRUXEval"
+
+# On-Device & Edge AI
+Download-Paper "2402.14905" "MobileLLM"
+Download-Paper "2312.11382" "On_Device_LLM_Survey"
+Download-Paper "2406.02691" "EdgeShard"
+Download-Paper "2405.14672" "LLM_Edge_Survey"
+Download-Paper "2407.10019" "MobileVLM_V2"
+
+# Optimization & Training
+Download-Paper "1412.6980"  "Adam_Optimizer"
+Download-Paper "2302.06675" "Lion_Optimizer"
+Download-Paper "2305.14342" "Sophia_Optimizer"
+Download-Paper "1904.00962" "LAMB_Optimizer"
+Download-Paper "2006.16668" "GShard_MoE"
+Download-Paper "2202.09368" "Expert_Choice_MoE"
+
+# NLP Architecture Classics
+Download-Paper "1910.13461" "BART"
+Download-Paper "2006.03654" "DeBERTa"
+Download-Paper "2010.11934" "mT5"
+Download-Paper "2108.12409" "ALiBi"
+Download-Paper "1910.07467" "RMSNorm"
+Download-Paper "1905.03197" "UniLM"
+
+# Multi-Agent
+Download-Paper "2305.14325" "LLM_Society_of_Mind"
+Download-Paper "2308.09830" "AgentSims"
+Download-Paper "2211.01910" "APE_Auto_Prompt_Engineer"
+Download-Paper "2309.16797" "Promptbreeder"
+
+# Continual & Federated Learning
+Download-Paper "1612.00796" "EWC_Continual_Learning"
+Download-Paper "1602.05629" "FedAvg"
+Download-Paper "1812.06127" "FedProx"
+
+# Retrieval & Embedding 2024
+Download-Paper "2401.00368" "E5_Mistral_Instruct"
+Download-Paper "2402.15449" "NV_Embed"
+Download-Paper "2405.04434" "BGE_M3"
+Download-Paper "2404.12699" "Gecko_Embedding"
+
+# Reasoning 2024
+Download-Paper "2411.14405" "Marco_o1"
+Download-Paper "2401.10020" "Evol_Instruct_Reasoning"
+Download-Paper "2312.11805" "SPIN_Reasoning"
+Download-Paper "2406.12793" "Skywork_o1"
+
+# Vision Foundation 2024
+Download-Paper "2303.05499" "Grounding_DINO"
+Download-Paper "2205.06230" "OWL-ViT"
+Download-Paper "2112.03857" "GLIP"
+Download-Paper "2405.14458" "Grounding_DINO_1.5"
+Download-Paper "2404.07177" "DINO_v2_Extended"
+
 Write-Host ""
-Write-Host "Done.  Success: $Success / Skip: $Skip / Fail: $Fail  (Total target: 200 papers)"
+Write-Host "Done.  Success: $Success / Skip: $Skip / Fail: $Fail  (Total target: 500 papers)"
