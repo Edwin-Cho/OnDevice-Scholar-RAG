@@ -969,20 +969,63 @@ else:
 | ID | 내용 | 우선순위 |
 | --- | --- | --- |
 | ✅ | **P16: Post-hoc Citation Injection 구현** (`generator.py`) | 🔴 높음 |
-| — | Session/History: localStorage 기반 대화 세션 저장 + 목록 + 로드 | 🔴 높음 |
-| — | **Tier 2: P13 post-hoc number scrubbing 구현** (`generator.py`) | � 중간 |
-| — | 모바일 반응형 레이아웃 (SRS v2.1.0) | 🟢 낮음 |
-| — | 다크/라이트 모드 토글 (SRS v2.1.0) | 🟢 낮음 |
+| ✅ | **Session/History: localStorage 기반 대화 세션 저장 + 목록 + 로드 + 이름변경** | 🔴 높음 |
+| ✅ | **Tier 2: P13 post-hoc number scrubbing 구현** (`generator.py`) | 🟡 중간 |
+| ✅ | **Eval 재실행 — P13/P16 효과 측정** | 🟡 중간 |
+| — | ~~모바일 반응형 레이아웃~~ (드롭) | — |
 
-**P16 Post-hoc Citation Injection (2026-04-07):**
-- `_inject_citations_post_hoc(answer, retrieved, min_overlap=0.25)` 추가
-- [Source:] 없는 문장 대상, 4글자 이상 단어 ≥5개 조건
-- retrieved 청크 word-overlap 계산 → best chunk citation 삽입
-- `generate()` 내 fallback 체크 이후, `_build_citations()` 이전 호출
-- 추가 inference 없음 — citation_rate_avg 0.20 → 목표 0.50+
+---
 
-**미커밋 파일 목록:**
-- `app/pipeline/generator.py` (P16 추가)
+## 2026-04-07 (Mon) — 저녁 세션
+
+**작업자:** Edwin R. Cho
+**작업 시간:** 20:30 — 21:05 KST
+**주요 목표:** P13 Tier 2 numeric scrubbing 구현 + Session rename UI + Eval 재실행
+
+---
+
+### P13 Tier 2 Post-hoc Numeric Scrubbing
+
+**구현 내용 (`app/pipeline/generator.py`):**
+
+- `_extract_context_numbers(retrieved)` — retrieved 청크 전체에서 숫자 집합 추출
+- `_scrub_hallucinated_numerics(answer, retrieved)` — answer 내 숫자 중 context에 없는 것을 `[?]`로 대체
+- `_NUM_RE` — 정수/소수/퍼센트/단위(k, M, B, x) 매칭 (고정폭 regex, Python 3.13 호환)
+- 예외: 연도(1000~2099), `[Source:...]` 태그 내부 숫자
+- 호출 순서: P16 injection → Tier 2 scrubbing → citation pruning
+
+**커밋:** `fa4c4b8` — feat: add P13 Tier 2 post-hoc numeric scrubbing
+
+---
+
+### Session Rename UI
+
+**구현 내용:**
+
+- `frontend/src/lib/sessions.ts` — `renameSession(id, title)` localStorage 업데이트
+- `frontend/src/contexts/SessionContext.tsx` — `renameSession` 훅 추가
+- `frontend/src/components/Layout.tsx` — 더블클릭 또는 ✏️ 아이콘 → 인라인 input, Enter/blur 저장, Escape 취소
+
+**커밋:** `f35fe9a` — feat: add session rename with inline edit UI
+
+---
+
+### Eval 재실행 결과 (P13 + P16 적용)
+
+| 지표 | 베이스라인 | Run 1 (0.25) | **Run 2 (0.15) ← 확정** | Run 3 (A+B+C) |
+| --- | --- | --- | --- | --- |
+| `citation_rate_avg` | ~0.20 | 0.2534 | **0.2608** | 0.2468 |
+| `warnings_per_query` | 0.44 | 0.22 | **0.22** | 0.22 |
+| `answer_length_avg_words` | — | 100.6 | 101.4 | 110.7 |
+
+**결론:**
+
+- `min_overlap=0.15` (Run 2)가 최적점 — citation_rate 0.2608, warnings 절반 감소
+- `citation_rate ~0.26`은 Qwen2.5-3B 모델 크기 한계 (3B 파라미터 소형 모델 천장)
+- A+B+C 전부 적용 시 오히려 하락 → 답변 길이 증가(분모 증가)로 citation density 희석
+- `rag_2024` 카테고리 0.1667 → 0.3000 (min_overlap 완화 효과 가장 큼)
+
+**확정 커밋:** `921a30d` — fix: rollback to Run 2 optimum (min_overlap=0.15, revert A+B+C)
 
 ---
 
