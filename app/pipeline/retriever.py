@@ -8,9 +8,16 @@ from app.pipeline.embedder import Embedder
 from app.pipeline.store import VectorStore
 
 
+_FALLBACK_SCORE_THRESHOLD = 0.20  # 2nd-pass threshold when primary (0.30) yields nothing
+
+
 def retrieve(query: str, top_k: int | None = None) -> List[Tuple[dict, float]]:
     """
     쿼리를 임베딩 후 FAISS Top-K 검색 + 임계값 필터링.
+
+    1st pass: retrieval_score_threshold (0.30)
+    2nd pass: _FALLBACK_SCORE_THRESHOLD (0.20) — vocabulary mismatch 쿼리 구제
+    최종 판단(topic 관련성)은 생성기 Rule 3에 위임.
 
     Returns:
         List of (metadata_dict, cosine_score) sorted by score desc.
@@ -23,6 +30,9 @@ def retrieve(query: str, top_k: int | None = None) -> List[Tuple[dict, float]]:
 
     store = VectorStore.get()
     results = store.search(query_vector, top_k=k)
+
+    if not results:
+        results = store.search(query_vector, top_k=k, score_threshold=_FALLBACK_SCORE_THRESHOLD)
 
     if results:
         top_score = results[0][1]

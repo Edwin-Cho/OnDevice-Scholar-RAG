@@ -936,6 +936,7 @@ else:
 | Self-RAG | ✅ | 1× | ❌ (재훈련) | partial | ❌ |
 
 **결론:**
+
 - RAFT / Self-RAG: 새 도메인 추가 시 재학습 필요 → RAG 철학 훼손
 - CAD: privacy 적합하나 2× 추론 비용 → on-device 비용 철학과 충돌
 - **Tier 2 Scrubbing이 LiE의 모든 제약(privacy + 비용 + no-retrain)을 동시에 만족하는 유일한 접근**
@@ -967,21 +968,21 @@ else:
 
 | ID | 내용 | 우선순위 |
 | --- | --- | --- |
+| ✅ | **P16: Post-hoc Citation Injection 구현** (`generator.py`) | 🔴 높음 |
 | — | Session/History: localStorage 기반 대화 세션 저장 + 목록 + 로드 | 🔴 높음 |
-| — | **Tier 2: P13 post-hoc number scrubbing 구현** (`generator.py`) | 🔴 높음 |
-| — | git commit + push (2026-04-05 ~ 04-07 변경사항 미커밋) | 🔴 높음 |
+| — | **Tier 2: P13 post-hoc number scrubbing 구현** (`generator.py`) | � 중간 |
 | — | 모바일 반응형 레이아웃 (SRS v2.1.0) | 🟢 낮음 |
 | — | 다크/라이트 모드 토글 (SRS v2.1.0) | 🟢 낮음 |
 
+**P16 Post-hoc Citation Injection (2026-04-07):**
+- `_inject_citations_post_hoc(answer, retrieved, min_overlap=0.25)` 추가
+- [Source:] 없는 문장 대상, 4글자 이상 단어 ≥5개 조건
+- retrieved 청크 word-overlap 계산 → best chunk citation 삽입
+- `generate()` 내 fallback 체크 이후, `_build_citations()` 이전 호출
+- 추가 inference 없음 — citation_rate_avg 0.20 → 목표 0.50+
+
 **미커밋 파일 목록:**
-- `app/models/schemas.py`
-- `app/main.py`
-- `app/pipeline/generator.py` (P12 fix + Rule 12/13 + few-shot)
-- `app/pipeline/retriever.py` (P15)
-- `config/eval_config.yaml`
-- `scripts/evaluate_rag.py`
-- `requirements.txt`
-- `docs/research_proposal_p13_hallucination.md`
+- `app/pipeline/generator.py` (P16 추가)
 
 ---
 

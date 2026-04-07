@@ -316,6 +316,59 @@ def _build_citations(retrieved: List[Tuple[dict, float]]) -> List[Citation]:
     return citations
 
 
+_SENT_SPLIT_RE = re.compile(r'(?<=[.!?])\s+')
+
+
+def _inject_citations_post_hoc(
+    answer: str,
+    retrieved: List[Tuple[dict, float]],
+    min_overlap: float = 0.25,
+) -> str:
+    """
+    Post-hoc Citation Injection (P16).
+    [Source:] 태그가 없는 문장마다 retrieved 청크와 word-overlap을 계산,
+    min_overlap 이상인 최적 청크의 citation을 문장 끝에 삽입.
+    추가 inference 없음 — O(sentences × chunks) 순수 문자열 연산.
+    """
+    sentences = _SENT_SPLIT_RE.split(answer)
+    result: list[str] = []
+
+    for sent in sentences:
+        if not sent.strip() or '[Source:' in sent:
+            result.append(sent)
+            continue
+
+        sent_words = set(re.findall(r'[a-zA-Z]{4,}', sent.lower()))
+        if len(sent_words) < 5:
+            result.append(sent)
+            continue
+
+        best_overlap = 0.0
+        best_meta: dict | None = None
+
+        for meta, score in retrieved:
+            if score < settings.citation_min_score:
+                continue
+            chunk_words = set(re.findall(r'[a-zA-Z]{4,}', meta.get("text", "").lower()))
+            if not chunk_words:
+                continue
+            overlap = len(sent_words & chunk_words) / len(sent_words)
+            if overlap > best_overlap:
+                best_overlap = overlap
+                best_meta = meta
+
+        if best_overlap >= min_overlap and best_meta:
+            filename = best_meta.get("source_filename", "unknown")
+            raw_header = best_meta.get("section_header")
+            section = (raw_header if raw_header and not _is_noise_header(raw_header) else None) or "—"
+            page = best_meta.get("page_number", "?")
+            result.append(f"{sent} [Source: {filename} | Section: {section} | p.{page}]")
+        else:
+            result.append(sent)
+
+    return " ".join(result)
+
+
 class Generator:
     """
     Qwen2.5-3B-Instruct 추론 엔진.
@@ -437,6 +490,8 @@ class Generator:
 
         if not answer or _is_fallback(answer):
             return FALLBACK_ANSWER, []
+
+        answer = _inject_citations_post_hoc(answer, retrieved)
 
         all_citations = _build_citations(retrieved)
 
