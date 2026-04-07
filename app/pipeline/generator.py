@@ -389,7 +389,7 @@ def _scrub_hallucinated_numerics(
 def _inject_citations_post_hoc(
     answer: str,
     retrieved: List[Tuple[dict, float]],
-    min_overlap: float = 0.25,
+    min_overlap: float = 0.15,
 ) -> str:
     """
     Post-hoc Citation Injection (P16).
