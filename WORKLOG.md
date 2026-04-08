@@ -1029,4 +1029,118 @@ else:
 
 ---
 
+---
+
+## 2026-04-08 (Tue)
+
+**작업자:** Edwin R. Cho
+**작업 시간:** 11:00 — 12:10 KST
+**주요 목표:** 전체 코드베이스 Bug/Flaw/Improvement 우선순위 리뷰 및 일괄 수정 (Backend + Frontend)
+
+---
+
+### 1. Backend Hardening (`app/main.py`, `app/config.py`, `app/pipeline/`)
+
+#### 1-1. `app/main.py` — 10건 수정
+
+| 분류 | 위치 | 내용 |
+| --- | --- | --- |
+| 🔴 Bug 1 | `generate()` 호출 언팩 | 반환값 3-tuple `(answer, citations, answer_pre_scrub)` 로 수정 |
+| 🔴 Bug 2 | `/ingest` | `file.filename` → `Path(file.filename).name` — 디렉토리 컴포넌트 제거 (path traversal 방어) |
+| 🟡 Flaw 1 | `_single_source_warnings` | `source_filename + paper_title` 모두 검색 → 파일명에 entity명 없을 때 false negative 제거 |
+| 🟡 Flaw 2 | `_CMP_PATTERN`/`_VS_PATTERN` | 중복 regex 제거 → `retriever._extract_comparison_sides()` 재사용 |
+| 🟡 Flaw 3 | `rebuild_index` | 동기 블로킹 루프 → `_do_rebuild()` 분리 + `run_in_threadpool()` |
+| 🟡 Flaw 4 | `/ingest` | `Path.rename()` → `shutil.move()` — Windows 덮어쓰기 호환 |
+| 🟡 Flaw 5 | `rebuild_index` | 파싱 실패 silent swallow 제거 → `failed_files` 리스트 + `logger.warning` |
+| 🟢 Improvement 1 | `@app.on_event` | deprecated → `@asynccontextmanager lifespan` 패턴 |
+| 🟢 Improvement 2 | `_SUGGEST_CACHE_PATH` | 하드코딩 경로 → `settings.data_index_dir / "suggested_queries.json"` |
+| 🟢 Improvement 3 | `global_exception_handler` | 내부 스택트레이스 클라이언트 노출 차단 → 제네릭 메시지 + `logger.exception` |
+
+#### 1-2. `app/config.py` + `.env.example` — 8건 수정
+
+- `retrieval_score_threshold`, `citation_min_score` 등 설정 상수 검증 추가
+- `model_validator`로 `citation_min_score > retrieval_score_threshold` 보장
+- `.env.example` 신규 생성 (전체 설정 키 문서화)
+
+#### 1-3. `app/pipeline/store.py` — 4건 수정
+
+- `add()`: `assert` → `raise ValueError` (운영 환경 AssertionError 방지)
+- `_save_unlocked()`: 원자적 저장 보장 (임시 파일 → rename)
+- `_load_if_exists()`: 인덱스-메타데이터 크기 정합성 검증 추가
+- `search()`: `query_vector` reshape 보장
+
+#### 1-4. `app/pipeline/retriever.py` — 7건 수정
+
+- `_extract_comparison_sides()` 리팩토링 + `main.py` 재사용 지원
+- 2-pass fallback retrieval 로직 강화
+- 비교 쿼리 sub-retrieval 엣지케이스 처리
+
+---
+
+### 2. Frontend Hardening (`frontend/src/`)
+
+#### 2-1. `components/Layout.tsx` — 9건 수정
+
+| 분류 | 내용 |
+| --- | --- |
+| 🔴 Bug 1 | `HealthBadge`: `/api/health` → `API_BASE + /health` (`VITE_API_URL` env 지원) |
+| 🔴 Bug 2 | 세션 더블클릭 시 `handleOpenSession` 2회 호출 → `clickTimer` 250ms 디바운스 분리 |
+| 🟡 Flaw 1 | `commitRename()` 도입 — `.trim()` 후 빈 문자열이면 저장 안 함 |
+| 🟡 Flaw 2 | 60초 tick `useEffect` 추가 → `formatRelativeTime` stale 갱신 |
+| 🟡 Flaw 3 | `handleLogout`에 `clearAllSessions()` 연동 → 다음 사용자에게 세션 노출 방지 |
+| 🟡 Flaw 4 | Trash2 클릭 시 `editingId === s.id`이면 `setEditingId(null)` — 고아 편집 상태 제거 |
+| 🟢 Improvement 1 | `AbortSignal.timeout()` → `AbortController` + `setTimeout` (Chrome 103/Safari 16 미만 호환) |
+| 🟢 Improvement 3 | `void check()` → IIFE `(async () => { await check(); })()` |
+| — | `useRef`, `type MouseEvent` import 추가 |
+
+#### 2-2. `contexts/SessionContext.tsx` — 9건 수정
+
+| 분류 | 내용 |
+| --- | --- |
+| 🔴 Bug 1 | `persistMessages`: `createdAt: Date.now()` → `existingSession?.createdAt ?? Date.now()` — 기존 세션 생성 시각 보존 |
+| 🔴 Bug 2 | 신규 세션 생성 시 `setCurrentId(newId)` 누락 → 사이드바 하이라이트 동기화 |
+| 🟡 Flaw 1 | `clearAllSessions()` Context API 노출 (이전 세션에서 완료) |
+| 🟡 Flaw 2 | `persistMessages`: rename 후 추가 저장 시 title 롤백 → `existingSession?.title ?? autoTitle` |
+| 🟡 Flaw 3 | `openSession`: `setSessionKey((k) => k + 1)` 누락 → Chat 컴포넌트 리마운트 추가 |
+| 🟡 Flaw 4 | `removeSession`: 삭제 후 `updated[0]` 자동 선택 (없으면 새 채팅 상태) |
+| 🟢 Improvement 1 | `s_${Date.now()}` → `s_${crypto.randomUUID()}` — 밀리초 ID 충돌 제거 |
+| 🟢 Improvement 2 | `useState(readSessions)` → lazy initializer + try/catch (localStorage 손상 시 앱 크래시 방지) |
+| 🟢 Improvement 3 | `sessionsRef` + `useEffect` sync — `persistMessages` stale closure 없이 최신 sessions 참조 |
+
+#### 2-3. `lib/sessions.ts` — 1건 추가
+
+- `clearAllSessions()`: `localStorage.removeItem(STORAGE_KEY)` 래퍼 함수 신규 추가
+
+---
+
+### 3. `app/pipeline/generator.py` — 3건 수정
+
+| 분류 | 내용 |
+| --- | --- |
+| 🔴 Bug 1 | `_build_citations`: `doc.close()` 예외 시 미호출 → `with fitz.open(...) as doc:` context manager |
+| 🟡 Flaw 1 | `_SENT_SPLIT_RE` 약어 오분리 → `_ABBREV_RE` + `_ABBREV_PLACEHOLDER` 전처리, `guarded` 기반 split/findall |
+| 🟡 Flaw 2 | `_build_citations`: 쿼리마다 PDF 재열기 → `_paper_title_cache` 모듈 레벨 딕셔너리 |
+
+---
+
+### 커밋 이력
+
+| 커밋 해시 | 메시지 |
+| --- | --- |
+| `aa1ef52` | `fix: harden backend — config/env, store, retriever, generator, main security & concurrency` |
+| `e1b0109` | `fix: generator — fitz resource leak, abbrev sentence split guard, paper title cache` |
+
+---
+
+## 현재 미완료 항목 (2026-04-08 기준)
+
+| ID | 내용 | 우선순위 |
+| --- | --- | --- |
+| — | `suggest_queries` `max_new_tokens=256` 하드코딩 → `settings` 항목 신설 | 🟢 낮음 |
+| — | Improvement 2 (터치 디바이스 세션 rename 접근성) | 🟢 낮음 |
+| — | `auth/` JWT 검증 로직 상세 리뷰 | 🟡 중간 |
+| — | `models/schemas.py` `QueryResponse.status` 3단계 Literal 타입 적용 | 🟢 낮음 |
+
+---
+
 *작성일: 2026-03-24 ~ 04-07 / 작성자: Edwin R. Cho*
