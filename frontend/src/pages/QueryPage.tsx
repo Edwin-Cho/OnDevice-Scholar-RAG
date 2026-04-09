@@ -3,7 +3,7 @@ import { api } from '@/lib/api';
 import type { Citation, ChatMessage } from '@/lib/types';
 import { useSession } from '@/contexts/SessionContext';
 import { readSessions } from '@/lib/sessions';
-import { Send, Loader2, BookOpen, AlertTriangle, ExternalLink, Copy, Check, Trash2, ChevronDown, ChevronUp, Sparkles, Search, ServerCrash } from 'lucide-react';
+import { Send, Loader2, BookOpen, AlertTriangle, ExternalLink, Copy, Check, Trash2, ChevronDown, ChevronUp, Sparkles, Search, ServerCrash, ShieldCheck, ShieldAlert, Hash, Scale, type LucideIcon } from 'lucide-react';
 import MathRenderer from '@/components/MathRenderer';
 
 type Message = ChatMessage;
@@ -17,15 +17,62 @@ const FALLBACK_QUERIES = [
 
 function ScoreBar({ score }: { score: number }) {
   const pct = Math.round(score * 100);
-  const color = score >= 0.8 ? '#10b981' : score >= 0.65 ? '#059669' : '#4b5563';
+  const tier =
+    score >= 0.80 ? { label: 'High', bar: '#10b981', text: '#10b981', cls: 'text-emerald-400' } :
+    score >= 0.65 ? { label: 'Mid',  bar: '#f59e0b', text: '#f59e0b', cls: 'text-amber-400'   } :
+                   { label: 'Low',  bar: '#ef4444', text: '#ef4444', cls: 'text-red-400'     };
   return (
     <div className="flex items-center gap-2">
+      <span className={`text-[9px] font-semibold w-5 shrink-0 ${tier.cls}`}>{tier.label}</span>
       <div className="flex-1 h-1 rounded-full bg-white/5 overflow-hidden">
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: tier.bar }} />
       </div>
-      <span className="text-[10px] tabular-nums" style={{ color }}>{pct}%</span>
+      <span className="text-[10px] tabular-nums" style={{ color: tier.text }}>{pct}%</span>
     </div>
   );
+}
+
+/* ── Warning helpers ──────────────────────────────────────────────────────── */
+type WarnTag = 'p12' | 'p13' | 'generic';
+
+function classifyWarning(w: string): WarnTag {
+  if (w.includes('[P12]')) return 'p12';
+  if (w.includes('[P13]')) return 'p13';
+  return 'generic';
+}
+
+function WarningChip({ tag, text }: { tag: WarnTag; text: string }) {
+  const meta: Record<WarnTag, { icon: LucideIcon; label: string; color: string; bg: string }> = {
+    p12:     { icon: Scale,         label: 'Bias detected',    color: 'text-orange-400', bg: 'bg-orange-500/8 border-orange-500/20' },
+    p13:     { icon: Hash,          label: 'Numeric scrubbed', color: 'text-amber-400',  bg: 'bg-amber-500/8 border-amber-500/20'  },
+    generic: { icon: AlertTriangle, label: 'Warning',          color: 'text-amber-400',  bg: 'bg-amber-500/8 border-amber-500/20'  },
+  };
+  const { icon: Icon, label, color, bg } = meta[tag];
+  return (
+    <div className={`flex items-start gap-2 border rounded-lg px-3 py-2 ${bg}`}>
+      <Icon className={`w-3 h-3 shrink-0 mt-0.5 ${color}`} />
+      <div className="min-w-0">
+        <span className={`text-[11px] font-medium ${color}`}>{label}</span>
+        <p className={`text-[11px] mt-0.5 leading-snug opacity-70 ${color} break-words`}>
+          {text.replace(/\[P\d+\]\s*/g, '')}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status, hasWarnings }: { status?: string; hasWarnings: boolean }) {
+  if (hasWarnings) return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
+      <ShieldAlert className="w-2.5 h-2.5" /> Caution
+    </span>
+  );
+  if (status === 'ok') return (
+    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-500 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded-full">
+      <ShieldCheck className="w-2.5 h-2.5" /> Verified
+    </span>
+  );
+  return null;
 }
 
 function CitationCard({ c }: { c: Citation }) {
@@ -98,13 +145,14 @@ function AssistantMessage({ msg, onCopy, copied, expanded, onToggleExpand }: {
         <BookOpen className="w-4 h-4 text-emerald-400" />
       </div>
       <div className="flex-1 space-y-3 min-w-0">
+        <div className="flex items-center gap-2 pt-0.5">
+          <StatusBadge status={msg.status} hasWarnings={!!msg.warning} />
+        </div>
         {msg.warning && (
-          <div className="flex items-start gap-2.5 bg-amber-500/8 border border-amber-500/20 rounded-xl px-3.5 py-2.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <p className="text-amber-400 text-xs font-medium leading-tight">Partial results</p>
-              <p className="text-amber-400/60 text-xs mt-0.5 leading-snug">{msg.warning}</p>
-            </div>
+          <div className="space-y-1.5">
+            {msg.warning.split(' | ').map((w, i) => (
+              <WarningChip key={i} tag={classifyWarning(w)} text={w} />
+            ))}
           </div>
         )}
         <div className="relative group">
@@ -118,6 +166,15 @@ function AssistantMessage({ msg, onCopy, copied, expanded, onToggleExpand }: {
             {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
           </button>
         </div>
+        {msg.timing && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-slate-600 font-mono mt-1">
+            {msg.timing.retrieval_ms !== undefined && <span>ret {msg.timing.retrieval_ms}ms</span>}
+            {msg.timing.generation_ms !== undefined && <><span className="text-slate-700">·</span><span>gen {(msg.timing.generation_ms / 1000).toFixed(1)}s</span></>}
+            {msg.timing.p16_ms !== undefined && <><span className="text-slate-700">·</span><span>P16 {msg.timing.p16_ms}ms</span></>}
+            {msg.timing.p13_ms !== undefined && <><span className="text-slate-700">·</span><span>P13 {msg.timing.p13_ms}ms</span></>}
+            {msg.timing.total_ms !== undefined && <><span className="text-slate-700">·</span><span className="text-slate-500">total {(msg.timing.total_ms / 1000).toFixed(1)}s</span></>}
+          </div>
+        )}
         {msg.citations && msg.citations.length > 0 && (
           <div>
             <button
@@ -224,6 +281,7 @@ export default function QueryPage() {
         citations: res.citations,
         status: res.status,
         warning: res.warnings?.length ? res.warnings.join(' | ') : undefined,
+        timing: res.timing,
       };
       setMessages((prev) => {
         const next = [...prev, assistantMsg];

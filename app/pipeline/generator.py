@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from typing import List, Tuple
 
 import fitz
@@ -680,19 +681,20 @@ class Generator:
         self,
         query: str,
         retrieved: List[Tuple[dict, float]],
-    ) -> Tuple[str, List[Citation], str]:
+    ) -> Tuple[str, List[Citation], str, dict]:
         """
         Retrieved 청크를 컨텍스트로 답변 생성 + Citation Validator 실행.
 
         Returns:
-            Tuple of ``(answer, citations, answer_pre_scrub)``:
+            Tuple of ``(answer, citations, answer_pre_scrub, timing)``:
             - answer: P16 injection + P13 scrubbing 완료된 최종 답변
             - citations: 검증된 Citation 목록
             - answer_pre_scrub: P13 스크러빙 이전 답변 (P12/P13 경고 계산에 사용)
-            관련 정보 없으면 ``(FALLBACK_ANSWER, [], "")`` 반환.
+            - timing: 단계별 실행 시간 (ms 단위)
+            관련 정보 없으면 ``(FALLBACK_ANSWER, [], "", {})`` 반환.
         """
         if not retrieved:
-            return FALLBACK_ANSWER, [], ""
+            return FALLBACK_ANSWER, [], "", {}
 
         context = _build_context_block(retrieved)
         user_message = (
@@ -737,26 +739,33 @@ class Generator:
         if settings.generation_do_sample:
             gen_kwargs["temperature"] = settings.generation_temperature
 
+        _t_gen = time.perf_counter()
         with torch.no_grad():
             output_ids = self._model.generate(**inputs, **gen_kwargs)
+        gen_ms = round((time.perf_counter() - _t_gen) * 1000, 1)
 
         generated = output_ids[0][inputs["input_ids"].shape[1]:]
         answer = self._tokenizer.decode(generated, skip_special_tokens=True).strip()
 
         if not answer or _is_fallback(answer):
-            return FALLBACK_ANSWER, [], ""
+            return FALLBACK_ANSWER, [], "", {"generation_ms": gen_ms}
 
-        # ── Post-processing Pipeline ────────────────────────────────────────
+        # ── Post-processing Pipeline ────────────────────────────────────────────────────────
         # Step 1 (P16): citation 없는 문장에 word-overlap 기반 citation 삽입
+        _t_p16 = time.perf_counter()
         answer = _inject_citations_post_hoc(answer, retrieved)
+        p16_ms = round((time.perf_counter() - _t_p16) * 1000, 1)
         # P12/P13 경고는 스크러빙 이전 답변에 적용해야 함
         # 스크러빙 후에는 숫자가 [?]로 치환되어 _METRIC_NUM_RE가 매치 불가 → 경고 항상 0
         answer_pre_scrub = answer
         # Step 2 (P13 Tier-2): context에 없는 숫자를 [?]로 스크러빙
+        _t_p13 = time.perf_counter()
         answer = _scrub_hallucinated_numerics(answer, retrieved)
-        # ───────────────────────────────────────────────────────────────────
+        p13_ms = round((time.perf_counter() - _t_p13) * 1000, 1)
+        # ────────────────────────────────────────────────────────
 
         # 전체 retrieved 청크에서 후보 citation 목록 구성 (score >= citation_min_score)
+        _t_cite = time.perf_counter()
         all_citations = _build_citations(retrieved)
 
         # 답변 텍스트에서 실제로 인용된 파일명 집합 추출
@@ -772,8 +781,15 @@ class Generator:
 
         # P11: 답변 키워드와 청크 키워드 교집합이 적은 citation 제거
         citations = _filter_by_contribution(answer, citations, retrieved)
+        cite_ms = round((time.perf_counter() - _t_cite) * 1000, 1)
 
-        return answer, citations, answer_pre_scrub
+        timing = {
+            "generation_ms": gen_ms,
+            "p16_ms": p16_ms,
+            "p13_ms": p13_ms,
+            "build_citations_ms": cite_ms,
+        }
+        return answer, citations, answer_pre_scrub, timing
 
     def suggest_queries(self, chunks: List[str]) -> List[str]:
         """

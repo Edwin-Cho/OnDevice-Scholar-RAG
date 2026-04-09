@@ -19,6 +19,7 @@ import logging
 import random
 import re
 import shutil
+import time
 import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -271,16 +272,18 @@ async def query(
     Returns:
         QueryResponse with answer, citations, warnings, and optional retrieved chunks.
     """
-    # Step 1: 비교 쿼리(“A vs B”) 여부에 따라 retrieval 전략 분기
+    # Step 1: 비교 쿼리("A vs B") 여부에 따라 retrieval 전략 분기
+    _t_ret = time.perf_counter()
     if is_comparison_query(body.query):
         retrieved = retrieve_comparison(body.query, top_k=body.top_k)
     else:
         retrieved = retrieve(body.query, top_k=body.top_k)
+    ret_ms = round((time.perf_counter() - _t_ret) * 1000, 1)
 
     # Step 2: LLM 답변 생성 + citation list 반환
     # answer_pre_scrub: P13 스크러빙 이전 답변 — P12/P13 경고 계산에 사용
     generator = Generator.get()
-    answer, citations, answer_pre_scrub = generator.generate(body.query, retrieved)
+    answer, citations, answer_pre_scrub, gen_timing = generator.generate(body.query, retrieved)
 
     # Step 3: 할루시네이션 경고 수집
     warnings: list[str] = []
@@ -302,12 +305,16 @@ async def query(
         if body.include_chunks else []
     )
 
+    timing = {"retrieval_ms": ret_ms, **gen_timing}
+    timing["total_ms"] = round(sum(timing.values()), 1)
+
     return QueryResponse(
         answer=answer,
         citations=citations,
         status="partial" if warnings else "ok",  # 경고 있으면 "partial"
         warnings=warnings,
         retrieved_chunks=retrieved_chunks,
+        timing=timing,
     )
 
 

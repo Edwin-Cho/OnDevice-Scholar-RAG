@@ -56,6 +56,7 @@ class QueryResponse(BaseModel):
     status: str = "ok"
     warnings: List[str] = []
     retrieved_chunks: List[str] = Field(default=[], description="Raw retrieved chunk texts. Populated only when include_chunks=True.")
+    timing: dict[str, float] | None = Field(default=None, description="Per-stage latency in ms: retrieval, generation, p16, p13, build_citations, total.")
 
 
 # ── Document Delete ─────────────────────────────────────────────────────────

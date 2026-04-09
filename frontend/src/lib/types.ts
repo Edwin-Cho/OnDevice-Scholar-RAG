@@ -13,6 +13,7 @@ export interface QueryResponse {
   citations: Citation[];
   status: 'ok' | 'partial' | 'no_context';
   warnings?: string[];
+  timing?: Record<string, number>;
 }
 
 export interface IngestResponse {
@@ -65,6 +66,7 @@ export interface ChatMessage {
   status?: QueryResponse['status'];
   warning?: string;
   error?: boolean;
+  timing?: Record<string, number>;
 }
 
 export interface Session {
