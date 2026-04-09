@@ -144,7 +144,15 @@ curl -X POST http://localhost:8000/query \
     }
   ],
   "status": "ok",
-  "warnings": []
+  "warnings": [],
+  "timing": {
+    "retrieval_ms": 48.3,
+    "generation_ms": 2341.0,
+    "p16_ms": 11.7,
+    "p13_ms": 3.2,
+    "build_citations_ms": 0.8,
+    "total_ms": 2405.0
+  }
 }
 ```
 
@@ -180,6 +188,10 @@ When only one side is retrieved in a comparison query:
 | **Noise Section Header Filter** | `_is_noise_header` applied at query time to both context block and citations — no re-indexing required |
 | **Single-source Badge** | UI amber badge when answer cites only 1 document: "1 source — verify independently" |
 | **Hallucination Defense Prompt** | SYSTEM_PROMPT Rules 9–11: verbatim metric names, time-bounded SOTA claims, no fabricated numerics |
+| **Status Badge** | Per-response Verified (green) / Caution (amber) pill based on warning presence |
+| **Warning Type Icons** | P12 Bias Detected (Scale icon) / P13 Numeric Scrubbed (Hash icon) / Generic (AlertTriangle) chips |
+| **ScoreBar Tier Grading** | Citation retrieval score colored High ≥80% (emerald) / Mid 65–79% (amber) / Low <65% (red) |
+| **Per-stage Latency** | `timing` field in `/query` response: retrieval / generation / P16 / P13 / total (ms) |
 
 ---
 
@@ -247,6 +259,10 @@ Apache License 2.0
 | **노이즈 섹션 헤더 필터** | `_is_noise_header` 를 쿼리 시점에 context block + citation 양쪽 적용 — re-indexing 불필요 |
 | **단일 출처 amber 배지** | 답변이 1개 문서만 인용 시 UI에 "1 source — verify independently" 경고 표시 |
 | **할루시네이션 방어 프롬프트** | SYSTEM_PROMPT Rule 9–11: 메트릭 이름 verbatim 보존, SOTA 시점 한정, 수치 날조 금지 |
+| **Status Badge** | 응답별 Verified(초록) / Caution(황색) pill — 경고 유무에 따라 자동 분류 |
+| **경고 유형 아이콘** | P12 편향(Scale) / P13 수치 스크러빙(Hash) / 기타(AlertTriangle) 칩으로 분류 표시 |
+| **ScoreBar 등급** | Citation 검색 점수 3단계 색상: High ≥80%(emerald) / Mid 65–79%(amber) / Low <65%(red) |
+| **단계별 Latency** | `/query` 응답에 `timing` 필드: retrieval / generation / P16 / P13 / total (ms 단위) |
 
 ### 빠른 시작
 
